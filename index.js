@@ -11,7 +11,7 @@ import {
 } from '@github/dependency-submission-toolkit'
 
 async function run() {
-  let spdxFiles = await parseFiles(await searchFiles());
+  let manifests = await getManifestsFromSpdxFiles(await searchFiles());
   
   let snapshot = new Snapshot({
     detector: new Detector({
@@ -21,29 +21,34 @@ async function run() {
     })
   });
 
-  spdxFiles.forEach(spdxFile => {
-    let manifest = new Manifest(spdxFile.name);
-    spdxFile.packages.forEach(pkg => {
-      let packageName = pkg.packageName;
-      let packageVersion = pkg.packageVersion;
-      let purl = pkg.purl;
-
-      manifest.addPackage(new Package(packageName, packageVersion, purl));
-      snapshot.addManifest(manifest);
-    });
+  manifests?.forEach(manifest => {
+    snapshot.addManifest(manifest);
   });
 
   submitSnapshot(snapshot);
 }
 
-async function parseFiles(files) {
-  let spdxFiles = [];
-  files.forEach(file => {
+async function getManifestFromSpdxFile(content, fileName) {
+  let manifest = new Manifest(fileName);
+  content.packages?.forEach(pkg => {
+    let packageName = pkg.packageName;
+    let packageVersion = pkg.packageVersion;
+    let purl = pkg.purl;
+
+    manifest.addPackage(new Package(packageName, packageVersion, purl));
+    snapshot.addManifest(manifest);
+  });
+
+  return manifest;
+}
+async function getManifestsFromSpdxFiles(files) {
+  let manifests = [];
+  files?.forEach(file => {
     fs.readFile(file, (err, content) => {
-      spdxFiles.push(parseSPDXFile(JSON.parse(content)));
+      manifests.push(parseSPDXFile(JSON.parse(content), file.name));
     });
   });
-  return spdxFiles;
+  return manifests;
 }
 
 async function searchFiles() {
