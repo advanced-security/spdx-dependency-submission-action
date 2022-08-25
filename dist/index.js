@@ -14430,11 +14430,9 @@ async function run() {
   let manifests = await getManifestsFromSpdxFiles(await searchFiles());
   
   let snapshot = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Snapshot({
-    detector: new Detector({
       name: "spdx-to-dependency-graph-action",
       version: "0.0.1",
       url: "https://github.com/jhutchings1/spdx-to-dependency-graph-action",
-    })
   });
 
   manifests?.forEach(manifest => {

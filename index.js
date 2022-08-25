@@ -14,11 +14,9 @@ async function run() {
   let manifests = await getManifestsFromSpdxFiles(await searchFiles());
   
   let snapshot = new Snapshot({
-    detector: new Detector({
       name: "spdx-to-dependency-graph-action",
       version: "0.0.1",
       url: "https://github.com/jhutchings1/spdx-to-dependency-graph-action",
-    })
   });
 
   manifests?.forEach(manifest => {
