@@ -21880,14 +21880,16 @@ function getManifestFromSpdxFile(document, fileName) {
   document.packages?.forEach(pkg => {
     let packageName = pkg.name;
     let packageVersion = pkg.packageVersion;
-    
+    let referenceLocator = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
+    let genericPurl = `pkg:generic/${packageName}@${packageVersion}`;
     // SPDX 2.3 defines a purl field 
-    let purl = pkg.purl;
-
-    if (purl == null || purl == undefined) {
-      purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
-    } else if (purl == null || purl == undefined) {
-      purl = `pkg:generic/${packageName}@${packageVersion}`;
+    let purl;
+    if (pkg.purl != undefined) {
+      purl = pkg.purl;
+    } else if (referenceLocator != undefined) {
+      purl = referenceLocator;
+    } else {
+      purl = genericPurl;
     }  
 
     // Working around weird encoding issues from an SBOM generator
