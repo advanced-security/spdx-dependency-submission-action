@@ -37,12 +37,14 @@ function getManifestFromSpdxFile(document, fileName) {
   core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
   let manifest = new Manifest(document.name, fileName);
-  //core.debug(`Processing ${JSON.stringify(document)}`);
-  core.debug(`Processing ${document.packages?.length}`);
+
+  core.debug(`Processing ${document.packages?.length} packages`);
+
   document.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;
-    let purl = pkg.purl;
+    let purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
+
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
       manifest.addIndirectDependency(new Package(purl));
