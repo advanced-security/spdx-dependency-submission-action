@@ -21850,7 +21850,7 @@ const glob = __nccwpck_require__(1957);
 
 
 async function run() {
-  let manifests = getManifestsFromSpdxFiles(await searchFiles());
+  let manifests = getManifestsFromSpdxFiles(searchFiles());
   
   let snapshot = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Snapshot({
       name: "spdx-to-dependency-graph-action",
@@ -21886,6 +21886,7 @@ function getManifestFromSpdxFile(content, fileName) {
   return manifest;
 }
 function getManifestsFromSpdxFiles(files) {
+  core.debug(`Processing ${files.length} files`);
   let manifests = [];
   files?.forEach(file => {
     core.debug(`Processing ${file}`);
@@ -21897,7 +21898,7 @@ function getManifestsFromSpdxFiles(files) {
   return manifests;
 }
 
-async function searchFiles() {
+function searchFiles() {
   let filePath = core.getInput('filePath');
   let filePattern = core.getInput('filePattern');
 

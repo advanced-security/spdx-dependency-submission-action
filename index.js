@@ -12,7 +12,7 @@ import {
 } from '@github/dependency-submission-toolkit'
 
 async function run() {
-  let manifests = getManifestsFromSpdxFiles(await searchFiles());
+  let manifests = getManifestsFromSpdxFiles(searchFiles());
   
   let snapshot = new Snapshot({
       name: "spdx-to-dependency-graph-action",
@@ -48,6 +48,7 @@ function getManifestFromSpdxFile(content, fileName) {
   return manifest;
 }
 function getManifestsFromSpdxFiles(files) {
+  core.debug(`Processing ${files.length} files`);
   let manifests = [];
   files?.forEach(file => {
     core.debug(`Processing ${file}`);
@@ -59,7 +60,7 @@ function getManifestsFromSpdxFiles(files) {
   return manifests;
 }
 
-async function searchFiles() {
+function searchFiles() {
   let filePath = core.getInput('filePath');
   let filePattern = core.getInput('filePattern');
 
