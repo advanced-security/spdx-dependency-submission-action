@@ -47,12 +47,13 @@ function getManifestFromSpdxFile(document, fileName) {
     if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
     } 
+    purl = decodeURIComponent(purl);
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-      manifest.addIndirectDependency(new Package(decodeURI(purl)));
+      manifest.addIndirectDependency(new Package(purl));
     } else {
-      manifest.addDirectDependency(new Package(decodeURI(purl)));
+      manifest.addDirectDependency(new Package(purl));
     }
   });
   return manifest;

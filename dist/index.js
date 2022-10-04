@@ -21884,12 +21884,13 @@ function getManifestFromSpdxFile(document, fileName) {
     if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
     } 
+    purl = decodeURIComponent(purl);
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-      manifest.addIndirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(decodeURI(purl)));
+      manifest.addIndirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(purl));
     } else {
-      manifest.addDirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(decodeURI(purl)));
+      manifest.addDirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(purl));
     }
   });
   return manifest;
