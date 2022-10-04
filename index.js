@@ -44,10 +44,13 @@ function getManifestFromSpdxFile(document, fileName) {
   document.packages?.forEach(pkg => {
     let packageName = pkg.name;
     let packageVersion = pkg.packageVersion;
-    let purl = he.decode(pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator);
+    let purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
     if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
-    }
+    } 
+    //Working around a character encoding issue I'm seeing from a Microsoft SBOM generator. 
+    purl = he.decode(purl);
+
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
