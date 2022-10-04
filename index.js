@@ -2,6 +2,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const fs = require('fs');
 const glob = require('glob');
+const he = require('he');
 
 import {
   PackageCache,
@@ -43,7 +44,7 @@ function getManifestFromSpdxFile(document, fileName) {
   document.packages?.forEach(pkg => {
     let packageName = pkg.name;
     let packageVersion = pkg.packageVersion;
-    let purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
+    let purl = he.decode(pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator);
     if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
     }
