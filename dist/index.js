@@ -21882,12 +21882,12 @@ function getManifestFromSpdxFile(document, fileName) {
     let purl = pkg.purl;
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-        manifest.addIndirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(packageName, packageVersion, purl, new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.BuildTarget(rel.spdxElementId)));
+      manifest.addIndirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(purl));
     } else {
-        manifest.addDirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(packageName, packageVersion, purl, new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.BuildTarget(rel.spdxElementId)));
-      }
-    });
-    return manifest;
+      manifest.addDirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(purl));
+    }
+  });
+  return manifest;
 }
 
 function getManifestsFromSpdxFiles(files) {

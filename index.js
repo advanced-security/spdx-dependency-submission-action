@@ -45,12 +45,12 @@ function getManifestFromSpdxFile(document, fileName) {
     let purl = pkg.purl;
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-        manifest.addIndirectDependency(new Package(packageName, packageVersion, purl, new BuildTarget(rel.spdxElementId)));
+      manifest.addIndirectDependency(new Package(purl));
     } else {
-        manifest.addDirectDependency(new Package(packageName, packageVersion, purl, new BuildTarget(rel.spdxElementId)));
-      }
-    });
-    return manifest;
+      manifest.addDirectDependency(new Package(purl));
+    }
+  });
+  return manifest;
 }
 
 function getManifestsFromSpdxFiles(files) {
