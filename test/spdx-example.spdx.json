@@ -1,0 +1,46 @@
+{
+    "spdxVersion": "SPDX-2.3",
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "name" : "SPDX 2.3 example",
+    "creationInfo": {
+        "created": "2022-08-24T04:00:50.104Z"
+    },
+    "packages": [
+        {
+            "packageName": "lodash",
+            "packageVersion": "4.17.21",
+            "purl": "pkg:NPM/lodash@4.17.21",
+            "filesAnalyzed": "false"
+        },
+        {
+            "packageName": "lodash",
+            "packageVersion": "^ 4.17.21",
+            "purl": "pkg:NPM/lodash@^ 4.17.21",
+            "filesAnalyzed": "false"
+        },
+        {
+            "packageName": "actions/checkout",
+            "packageVersion": "3",
+            "purl": "pkg:ACTIONS/actions/checkout@3",
+            "filesAnalyzed": "false"
+        },
+        {
+            "packageName": "dsp-testing/dependency-review-action",
+            "packageVersion": "main",
+            "purl": "pkg:ACTIONS/dsp-testing/dependency-review-action@main",
+            "filesAnalyzed": "false"
+        },
+        {
+            "packageName": "actions/checkout",
+            "packageVersion": "3",
+            "purl": "pkg:ACTIONS/actions/checkout@3",
+            "filesAnalyzed": "false"
+        },
+        {
+            "packageName": "actions/upload-artifact",
+            "packageVersion": "3.1.0",
+            "purl": "pkg:ACTIONS/actions/upload-artifact@3.1.0",
+            "filesAnalyzed": "false"
+        }
+    ]
+}

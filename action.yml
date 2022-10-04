@@ -1,13 +1,21 @@
-name: 'Wait'
-description: 'Wait a designated number of milliseconds'
+name: 'SPDX-to-dependency-graph-action'
+description: 'Upload SPDX files to the dependency graph'
 inputs:
-  milliseconds:  # id of input
-    description: 'number of milliseconds to wait'
-    required: true
-    default: '1000'
-outputs:
-  time: # output will be available to future steps
-    description: 'The current time after waiting'
+  token:
+    description: "GitHub Personal Access Token (PAT). Defaults to PAT provided by Actions runner."
+    required: false
+    default: ${{ github.token }}
+  filePath:  
+    description: 'The path to the directory containing the SPDX files to upload. Defaults to Actions working directory.'
+    required: false
+    default: '.'
+  filePattern:
+    description: 'The file name pattern for SPDX files to upload'
+    required: false
+    default: '*.spdx.json'
 runs:
   using: 'node16'
   main: 'dist/index.js'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
