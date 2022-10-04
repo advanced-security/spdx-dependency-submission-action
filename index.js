@@ -12,7 +12,7 @@ import {
 } from '@github/dependency-submission-toolkit'
 
 async function run() {
-  let manifests = await getManifestsFromSpdxFiles(await searchFiles());
+  let manifests = getManifestsFromSpdxFiles(await searchFiles());
   
   let snapshot = new Snapshot({
       name: "spdx-to-dependency-graph-action",
@@ -67,6 +67,7 @@ async function searchFiles() {
     if (err) {
       core.error(err);
     } else {
+      core.debug(`Found ${files.length} files`);
       return files;
     }
   });

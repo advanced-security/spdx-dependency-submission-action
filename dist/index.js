@@ -21850,7 +21850,7 @@ const glob = __nccwpck_require__(1957);
 
 
 async function run() {
-  let manifests = await getManifestsFromSpdxFiles(await searchFiles());
+  let manifests = getManifestsFromSpdxFiles(await searchFiles());
   
   let snapshot = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Snapshot({
       name: "spdx-to-dependency-graph-action",
@@ -21905,6 +21905,7 @@ async function searchFiles() {
     if (err) {
       core.error(err);
     } else {
+      core.debug(`Found ${files.length} files`);
       return files;
     }
   });
