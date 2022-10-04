@@ -47,14 +47,12 @@ function getManifestFromSpdxFile(document, fileName) {
     if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
     } 
-    //Working around a character encoding issue I'm seeing from a Microsoft SBOM generator. 
-    purl = decodeURI(purl);
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-      manifest.addIndirectDependency(new Package(purl));
+      manifest.addIndirectDependency(new Package(decodeURI(purl)));
     } else {
-      manifest.addDirectDependency(new Package(purl));
+      manifest.addDirectDependency(new Package(decodeURI(purl)));
     }
   });
   return manifest;
