@@ -28,8 +28,7 @@
     "@actions/core": "^1.2.5",
     "@actions/github": "^5.1.1",
     "@github/dependency-submission-toolkit": "^1.2.2",
-    "fs": "^0.0.1-security",
-    "he": "^1.2.0"
+    "fs": "^0.0.1-security"
   },
   "devDependencies": {
     "@vercel/ncc": "^0.31.1",
