@@ -2,7 +2,6 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const fs = require('fs');
 const glob = require('glob');
-const he = require('he');
 
 import {
   PackageCache,
@@ -49,8 +48,7 @@ function getManifestFromSpdxFile(document, fileName) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
     } 
     //Working around a character encoding issue I'm seeing from a Microsoft SBOM generator. 
-    purl = he.decode(purl);
-
+    purl = decodeURI(purl);
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
