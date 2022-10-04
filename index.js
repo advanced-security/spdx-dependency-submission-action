@@ -8,6 +8,7 @@ import {
   BuildTarget,
   Package,
   Snapshot,
+  Manifest,
   submitSnapshot
 } from '@github/dependency-submission-toolkit'
 
