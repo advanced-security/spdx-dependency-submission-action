@@ -1,6 +1,7 @@
 {
     "spdxVersion": "SPDX-2.3",
     "SPDXID": "SPDXRef-DOCUMENT",
+    "name" : "SPDX 2.3 example",
     "creationInfo": {
         "created": "2022-08-24T04:00:50.104Z"
     },
