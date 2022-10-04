@@ -43,12 +43,12 @@ function getManifestFromSpdxFile(document, fileName) {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;
     let purl = pkg.purl;
-    /*let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
-    if (relationships.length > 0) {
+    let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
+    if (relationships != null && relationships.length > 0) {
         manifest.addIndirectDependency(new Package(packageName, packageVersion, purl, new BuildTarget(rel.spdxElementId)));
     } else {
         manifest.addDirectDependency(new Package(packageName, packageVersion, purl, new BuildTarget(rel.spdxElementId)));
-      }*/
+      }
     });
     return manifest;
 }
