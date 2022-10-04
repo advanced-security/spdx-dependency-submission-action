@@ -21874,7 +21874,8 @@ function getManifestFromSpdxFile(document, fileName) {
   core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
   let manifest = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Manifest(document.name, fileName);
-  core.debug(`Processing ${document}`);
+  core.debug(`Processing ${document.stringify()}`);
+  core.debug(`Processing ${document.packages?.length}`);
   document.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;
@@ -21894,7 +21895,7 @@ function getManifestsFromSpdxFiles(files) {
   let manifests = [];
   files?.forEach(file => {
     core.debug(`Processing ${file}`);
-    manifests.push(getManifestFromSpdxFile(JSON.parse(fs.readFileSync(file)), file.name));
+    manifests.push(getManifestFromSpdxFile(JSON.parse(fs.readFileSync(file)), file));
   });
   return manifests;
 }
