@@ -40,6 +40,6 @@
             "packageVersion": "3.1.0",
             "purl": "pkg:ACTIONS/actions/upload-artifact@3.1.0",
             "filesAnalyzed": "false"
-        },
+        }
     ]
 }
