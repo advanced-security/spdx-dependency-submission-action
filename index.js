@@ -64,14 +64,7 @@ function searchFiles() {
   let filePath = core.getInput('filePath');
   let filePattern = core.getInput('filePattern');
 
-  glob(`${filePath}/${filePattern}`, {}, (err, files) => {
-    if (err) {
-      core.error(err);
-    } else {
-      core.debug(`Found ${files.length} files`);
-      return files;
-    }
-  });
+  return glob.sync(`${filePath}/${filePattern}`, {});
 }
 
 run();
