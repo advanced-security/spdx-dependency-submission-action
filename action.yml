@@ -1,6 +1,10 @@
 name: 'SPDX-to-dependency-graph-action'
 description: 'Upload SPDX files to the dependency graph'
 inputs:
+  token:
+    description: "GitHub Personal Access Token (PAT). Defaults to PAT provided by Actions runner."
+    required: false
+    default: ${{ github.token }}
   filePath:  
     description: 'The path to the directory containing the SPDX files to upload. Defaults to Actions working directory.'
     required: false

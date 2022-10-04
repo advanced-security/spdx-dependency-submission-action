@@ -1,4 +1,5 @@
 const core = require('@actions/core');
+const github = require('@actions/github');
 const fs = require('fs');
 const glob = require('glob');
 
@@ -17,6 +18,11 @@ async function run() {
       name: "spdx-to-dependency-graph-action",
       version: "0.0.1",
       url: "https://github.com/jhutchings1/spdx-to-dependency-graph-action",
+  }, 
+  github.context,
+  {
+    correlator:`${github.context.job}`,
+    id: github.context.runId.toString()
   });
 
   manifests?.forEach(manifest => {
@@ -26,7 +32,7 @@ async function run() {
   submitSnapshot(snapshot);
 }
 
-async function getManifestFromSpdxFile(content, fileName) {
+function getManifestFromSpdxFile(content, fileName) {
   let manifest = new Manifest(fileName);
   content.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
@@ -39,7 +45,7 @@ async function getManifestFromSpdxFile(content, fileName) {
 
   return manifest;
 }
-async function getManifestsFromSpdxFiles(files) {
+function getManifestsFromSpdxFiles(files) {
   let manifests = [];
   files?.forEach(file => {
     fs.readFile(file, (err, content) => {
