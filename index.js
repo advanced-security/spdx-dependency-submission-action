@@ -46,8 +46,13 @@ function getManifestFromSpdxFile(document, fileName) {
     let purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
     if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
-    } 
-    purl = decodeURIComponent(purl);
+    }  else {
+      // Working around weird encoding issues from an SBOM generator
+      // Find the last instance of %40 and replace it with @
+      purl = replaceVersionEscape(purl);
+    }
+    
+    
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
@@ -74,6 +79,17 @@ function searchFiles() {
   let filePattern = core.getInput('filePattern');
 
   return glob.sync(`${filePath}/${filePattern}`, {});
+}
+
+// Fixes issues with an escaped version string
+function replaceVersionEscape(purl) {
+  if (!purl.includes("@")) {
+    let index = purl.lastIndexOf("%40");
+    if (index > 0) {
+      purl = purl.substring(0, index) + "@" + purl.substring(index + 3);
+    }
+  }
+  return purl;
 }
 
 run();
