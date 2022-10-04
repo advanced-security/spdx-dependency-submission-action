@@ -33,21 +33,24 @@ async function run() {
   submitSnapshot(snapshot);
 }
 
-function getManifestFromSpdxFile(content, fileName) {
+function getManifestFromSpdxFile(document, fileName) {
   core.debug(`Processing ${fileName}`);
-  core.debug(`Content: ${content}`);
-  let manifest = new Manifest(fileName);
-  content.packages?.forEach(pkg => {
+
+  let manifest = new Manifest(document.name, fileName);
+  document.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;
     let purl = pkg.purl;
-
-    manifest.addPackage(new Package(packageName, packageVersion, purl));
-    snapshot.addManifest(manifest);
-  });
-
-  return manifest;
+    let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
+    if (relationships.length > 0) {
+        manifest.addIndirectDependency(new Package(packageName, packageVersion, purl, new BuildTarget(rel.spdxElementId)));
+    } else {
+        manifest.addDirectDependency(new Package(packageName, packageVersion, purl, new BuildTarget(rel.spdxElementId)));
+      }
+    });
+    return manifest;
 }
+
 function getManifestsFromSpdxFiles(files) {
   core.debug(`Processing ${files.length} files`);
   let manifests = [];

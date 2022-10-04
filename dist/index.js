@@ -21870,21 +21870,24 @@ async function run() {
   (0,_github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.submitSnapshot)(snapshot);
 }
 
-function getManifestFromSpdxFile(content, fileName) {
+function getManifestFromSpdxFile(document, fileName) {
   core.debug(`Processing ${fileName}`);
-  core.debug(`Content: ${content}`);
-  let manifest = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Manifest(fileName);
-  content.packages?.forEach(pkg => {
+
+  let manifest = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Manifest(document.name, fileName);
+  document.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;
     let purl = pkg.purl;
-
-    manifest.addPackage(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(packageName, packageVersion, purl));
-    snapshot.addManifest(manifest);
-  });
-
-  return manifest;
+    let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
+    if (relationships.length > 0) {
+        manifest.addIndirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(packageName, packageVersion, purl, new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.BuildTarget(rel.spdxElementId)));
+    } else {
+        manifest.addDirectDependency(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(packageName, packageVersion, purl, new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.BuildTarget(rel.spdxElementId)));
+      }
+    });
+    return manifest;
 }
+
 function getManifestsFromSpdxFiles(files) {
   core.debug(`Processing ${files.length} files`);
   let manifests = [];
