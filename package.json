@@ -1,7 +1,7 @@
 {
-  "name": "javascript-action",
+  "name": "spdx-to-dependency-graph-action",
   "version": "1.0.0",
-  "description": "JavaScript Action Template",
+  "description": "SPDX to Dependency Graph Action",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/javascript-action.git"
+    "url": "git+https://github.com/jhutchings1/spdx-to-dependency-graph-action.git"
   },
   "keywords": [
     "GitHub",
@@ -21,9 +21,9 @@
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/actions/javascript-action/issues"
+    "url": "https://github.com/jhutchings1/spdx-to-dependency-graph-action/issues"
   },
-  "homepage": "https://github.com/actions/javascript-action#readme",
+  "homepage": "https://github.com/jhutchings1/spdx-to-dependency-graph-action#readme",
   "dependencies": {
     "@actions/core": "^1.2.5",
     "@github/dependency-submission-toolkit": "^1.2.2",

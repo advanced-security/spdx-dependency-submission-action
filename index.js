@@ -43,7 +43,7 @@ async function getManifestsFromSpdxFiles(files) {
   let manifests = [];
   files?.forEach(file => {
     fs.readFile(file, (err, content) => {
-      manifests.push(parseSPDXFile(JSON.parse(content), file.name));
+      manifests.push(getManifestFromSpdxFile(JSON.parse(content), file.name));
     });
   });
   return manifests;

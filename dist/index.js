@@ -14449,7 +14449,7 @@ async function getManifestFromSpdxFile(content, fileName) {
     let packageVersion = pkg.packageVersion;
     let purl = pkg.purl;
 
-    manifest.addPackage(new Package(packageName, packageVersion, purl));
+    manifest.addPackage(new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Package(packageName, packageVersion, purl));
     snapshot.addManifest(manifest);
   });
 
@@ -14459,7 +14459,7 @@ async function getManifestsFromSpdxFiles(files) {
   let manifests = [];
   files?.forEach(file => {
     fs.readFile(file, (err, content) => {
-      manifests.push(parseSPDXFile(JSON.parse(content), file.name));
+      manifests.push(getManifestFromSpdxFile(JSON.parse(content), file.name));
     });
   });
   return manifests;
