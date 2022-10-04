@@ -21880,6 +21880,7 @@ function getManifestFromSpdxFile(document, fileName) {
   document.packages?.forEach(pkg => {
     let packageName = pkg.name;
     let packageVersion = pkg.packageVersion;
+    
     // SPDX 2.3 defines a purl field 
     let purl = pkg.purl;
 
@@ -21923,7 +21924,7 @@ function searchFiles() {
 // Fixes issues with an escaped version string
 function replaceVersionEscape(purl) {
   //If there's an "@" in the purl, then we don't need to do anything.
-  if (!purl.includes("@")) {
+  if (!purl?.includes("@")) {
     let index = purl.lastIndexOf("%40");
     if (index > 0) {
       purl = purl.substring(0, index) + "@" + purl.substring(index + 3);
