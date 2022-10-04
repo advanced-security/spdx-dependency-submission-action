@@ -50,7 +50,9 @@ function getManifestFromSpdxFile(content, fileName) {
 function getManifestsFromSpdxFiles(files) {
   let manifests = [];
   files?.forEach(file => {
+    core.debug(`Processing ${file}`);
     fs.readFile(file, (err, content) => {
+      core.debug(`Content: ${content}`);
       manifests.push(getManifestFromSpdxFile(JSON.parse(content), file.name));
     });
   });
