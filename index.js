@@ -34,9 +34,10 @@ async function run() {
 }
 
 function getManifestFromSpdxFile(document, fileName) {
-  core.debug(`Processing ${fileName}`);
+  core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
   let manifest = new Manifest(document.name, fileName);
+  core.debug(`Processing ${document}`);
   document.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;

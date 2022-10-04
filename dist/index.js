@@ -21871,9 +21871,10 @@ async function run() {
 }
 
 function getManifestFromSpdxFile(document, fileName) {
-  core.debug(`Processing ${fileName}`);
+  core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
   let manifest = new _github_dependency_submission_toolkit__WEBPACK_IMPORTED_MODULE_0__.Manifest(document.name, fileName);
+  core.debug(`Processing ${document}`);
   document.packages?.forEach(pkg => {
     let packageName = pkg.packageName;
     let packageVersion = pkg.packageVersion;
