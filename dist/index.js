@@ -21893,10 +21893,7 @@ function getManifestsFromSpdxFiles(files) {
   let manifests = [];
   files?.forEach(file => {
     core.debug(`Processing ${file}`);
-    fs.readFile(file, (err, content) => {
-      core.debug(`Content: ${content}`);
-      manifests.push(getManifestFromSpdxFile(JSON.parse(content), file.name));
-    });
+    manifests.push(getManifestFromSpdxFile(JSON.parse(fs.readFileSync(file)), file.name));
   });
   return manifests;
 }
