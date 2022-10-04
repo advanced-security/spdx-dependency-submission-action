@@ -43,16 +43,18 @@ function getManifestFromSpdxFile(document, fileName) {
   document.packages?.forEach(pkg => {
     let packageName = pkg.name;
     let packageVersion = pkg.packageVersion;
-    let purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
+    // SPDX 2.3 defines a purl field 
+    let purl = pkg.purl;
+
     if (purl == null || purl == undefined) {
+      purl = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
+    } else if (purl == null || purl == undefined) {
       purl = `pkg:generic/${packageName}@${packageVersion}`;
-    }  else {
-      // Working around weird encoding issues from an SBOM generator
-      // Find the last instance of %40 and replace it with @
-      purl = replaceVersionEscape(purl);
-    }
-    
-    
+    }  
+
+    // Working around weird encoding issues from an SBOM generator
+    // Find the last instance of %40 and replace it with @
+    purl = replaceVersionEscape(purl);  
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
@@ -83,6 +85,7 @@ function searchFiles() {
 
 // Fixes issues with an escaped version string
 function replaceVersionEscape(purl) {
+  //If there's an "@" in the purl, then we don't need to do anything.
   if (!purl.includes("@")) {
     let index = purl.lastIndexOf("%40");
     if (index > 0) {
