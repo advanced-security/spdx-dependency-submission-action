@@ -1,5 +1,5 @@
 name: 'SPDX to dependency graph action'
-description: 'Upload SPDX SBOM files to the dependency graph's dependency submission API'
+description: 'Upload SPDX SBOM files to the dependency graph''s dependency submission API'
 inputs:
   token:
     description: "GitHub Personal Access Token (PAT). Defaults to PAT provided by Actions runner."
