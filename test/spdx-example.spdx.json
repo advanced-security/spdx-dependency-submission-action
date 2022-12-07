@@ -15,7 +15,13 @@
         {
             "packageName": "lodash",
             "packageVersion": "^ 4.17.21",
-            "purl": "pkg:NPM/lodash@^ 4.17.21",
+            "purl": "pkg:NPM/lodash@^4.17.21",
+            "filesAnalyzed": "false"
+        },
+        {
+            "packageName": "@angular/cli",
+            "packageVersion": "^ 4.17.21",
+            "purl": "pkg:NPM/%40angular/cli@^4.17.21",
             "filesAnalyzed": "false"
         },
         {
