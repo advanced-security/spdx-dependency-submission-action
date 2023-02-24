@@ -18,7 +18,7 @@ async function run() {
   let snapshot = new Snapshot({
       name: "spdx-to-dependency-graph-action",
       version: "0.0.1",
-      url: "https://github.com/jhutchings1/spdx-to-dependency-graph-action",
+      url: "https://github.com/advanced-security/spdx-dependency-submission-action",
   }, 
   github.context,
   {

@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - 'releases/*'
+  workflow_dispatch:
 
 jobs:
   # test action works running from the graph
