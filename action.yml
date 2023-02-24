@@ -1,4 +1,4 @@
-name: 'SPDX to dependency graph action'
+name: 'SPDX Dependency Submission Action'
 description: 'Upload SPDX SBOM files to the dependency graph''s dependency submission API'
 inputs:
   token:
