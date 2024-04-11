@@ -1,11 +1,43 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
+  # ---------- GitHub Actions ----------
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: daily
+      interval: "weekly"
+    reviewers:
+      - "advanced-security/oss-maintainers"
+      - "lseppala"
+      - "courtneycl"
+    target-branch: "main"
+    commit-message:
+      prefix: deps
+      prefix-development: chore
+    labels:
+      - "Dependencies"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+      development-dependencies:
+        dependency-type: "development"
 
-  - package-ecosystem: npm
-    directory: /
+  # ---------- JS / TS / NPM ----------
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: daily
+      interval: "weekly"
+    reviewers:
+      - "advanced-security/oss-maintainers"
+      - "lseppala"
+      - "courtneycl"
+    target-branch: "main"
+    commit-message:
+      prefix: deps
+      prefix-development: chore
+    labels:
+      - "Dependencies"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+      development-dependencies:
+        dependency-type: "development"
