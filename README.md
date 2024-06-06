@@ -3,9 +3,9 @@
 This repository makes it easy to upload an SPDX 2.2 formatted SBOM to GitHub's dependency submission API.
 This lets you quickly receive Dependabot alerts for package manifests which GitHub doesn't directly support like pnpm or Paket by using existing off-the-shelf SBOM generators.
 
-### Example workflow
+## Example workflow
 
-This workflow uses the [Microsoft sbom-tool](https://github.com/microsoft/sbom-tool). 
+This workflow uses the [Microsoft sbom-tool](https://github.com/microsoft/sbom-tool).
 
 ```yaml
 name: SBOM upload
