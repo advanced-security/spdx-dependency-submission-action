@@ -3,19 +3,12 @@ const github = require('@actions/github');
 const fs = require('fs');
 const glob = require('glob');
 
-import {
-  PackageCache,
-  BuildTarget,
-  Package,
-  Snapshot,
-  Manifest,
-  submitSnapshot
-} from '@github/dependency-submission-toolkit'
+const toolkit = require('@github/dependency-submission-toolkit');
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
   
-  let snapshot = new Snapshot({
+  let snapshot = new toolkit.Snapshot({
       name: "spdx-to-dependency-graph-action",
       version: "0.0.1",
       url: "https://github.com/advanced-security/spdx-dependency-submission-action",
@@ -30,13 +23,13 @@ async function run() {
     snapshot.addManifest(manifest);
   });
 
-  submitSnapshot(snapshot);
+  toolkit.submitSnapshot(snapshot);
 }
 
 function getManifestFromSpdxFile(document, fileName) {
   core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
-  let manifest = new Manifest(document.name, fileName);
+  let manifest = new toolkit.Manifest(document.name, fileName);
 
   core.debug(`Processing ${document.packages?.length} packages`);
 
@@ -61,9 +54,9 @@ function getManifestFromSpdxFile(document, fileName) {
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-      manifest.addIndirectDependency(new Package(purl));
+      manifest.addIndirectDependency(new toolkit.Package(purl));
     } else {
-      manifest.addDirectDependency(new Package(purl));
+      manifest.addDirectDependency(new toolkit.Package(purl));
     }
   });
   return manifest;

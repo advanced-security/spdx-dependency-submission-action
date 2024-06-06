@@ -35603,6 +35603,54 @@ function parseParams (str) {
 module.exports = parseParams
 
 
+/***/ }),
+
+/***/ 3415:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var packageurlJs = __nccwpck_require__(8915);
+var a = __nccwpck_require__(6491);
+var i = __nccwpck_require__(5438);
+var requestError = __nccwpck_require__(537);
+
+function _interopNamespace(e) {
+	if (e && e.__esModule) return e;
+	var n = Object.create(null);
+	if (e) {
+		Object.keys(e).forEach(function (k) {
+			if (k !== 'default') {
+				var d = Object.getOwnPropertyDescriptor(e, k);
+				Object.defineProperty(n, k, d.get ? d : {
+					enumerable: true,
+					get: function () { return e[k]; }
+				});
+			}
+		});
+	}
+	n.default = e;
+	return Object.freeze(n);
+}
+
+var a__namespace = /*#__PURE__*/_interopNamespace(a);
+var i__namespace = /*#__PURE__*/_interopNamespace(i);
+
+var o=class{depPackage;relationship;scope;constructor(e,t,s){this.depPackage=e,t!==void 0&&(this.relationship=t),s!==void 0&&(this.scope=s);}toJSON(){return {package_url:this.depPackage.packageURL.toString(),relationship:this.relationship,scope:this.scope,dependencies:this.depPackage.packageDependencyIDs}}},g=class{resolved;name;file;constructor(e,t){this.resolved={},this.name=e,t&&(this.file={source_location:t});}addDirectDependency(e,t){this.resolved[e.packageID()]=new o(e,"direct",t);}addIndirectDependency(e,t){this.resolved[e.packageID()]??=new o(e,"indirect",t);}hasDependency(e){return this.lookupDependency(e)!==void 0}lookupDependency(e){return this.resolved[e.packageID()]}countDependencies(){return Object.keys(this.resolved).length}filterDependencies(e){return Object.values(this.resolved).reduce((t,s)=>(e(s)&&t.push(s.depPackage),t),[])}directDependencies(){return this.filterDependencies(e=>e.relationship==="direct")}indirectDependencies(){return this.filterDependencies(e=>e.relationship==="indirect")}},u=class extends g{addBuildDependency(e){this.addDirectDependency(e,"runtime");for(let t of e.dependencies)this.addIndirectDependency(t,"runtime");}};var c=class{packageURL;dependencies;constructor(e){typeof e=="string"?this.packageURL=packageurlJs.PackageURL.fromString(e):this.packageURL=e,this.dependencies=[];}dependsOn(e){return this.dependencies.push(e),this}dependsOnPackages(e){for(let t of e)this.dependsOn(t);return this}get packageDependencyIDs(){return this.dependencies.map(e=>e.packageID())}packageID(){return this.packageURL.toString()}namespace(){return this.packageURL.namespace??null}name(){return this.packageURL.name}version(){return this.packageURL.version||""}matching(e){return (e.namespace===void 0||this.packageURL.namespace===e.namespace)&&(e.name===void 0||this.packageURL.name===e.name)&&(e.version===void 0||this.packageURL.version===e.version)}};var h=class{database;constructor(){this.database={};}package(e){let t=this.lookupPackage(e);if(t)return t;let s=new c(e);return this.addPackage(s),s}packagesMatching(e){return Object.values(this.database).filter(t=>t.matching(e))}addPackage(e){this.database[e.packageURL.toString()]=e;}removePackage(e){delete this.database[e.packageURL.toString()];}lookupPackage(e){if(typeof e=="string"){let t=packageurlJs.PackageURL.fromString(e);return this.database[t.toString()]}return this.database[e.toString()]}hasPackage(e){return this.lookupPackage(e)!==void 0}countPackages(){return Object.values(this.database).length}};function y(r){return {correlator:r.job,id:r.runId.toString()}}function P(r){return ["pull_request","pull_request_comment","pull_request_review","pull_request_review_comment"].includes(r.eventName)?r.payload.pull_request.head.sha:r.sha}var l=class{manifests;version;job;sha;ref;scanned;detector;constructor(e,t=i__namespace.context,s,p=new Date,n=0){this.detector=e,this.version=n,this.job=s||y(t),this.sha=P(t),this.ref=t.ref,this.scanned=p.toISOString(),this.manifests={};}addManifest(e){this.manifests[e.name]=e;}prettyJSON(){return JSON.stringify(this,void 0,4)}};async function L(r,e=i__namespace.context){a__namespace.setOutput("snapshot",JSON.stringify(r)),a__namespace.notice("Submitting snapshot..."),a__namespace.notice(r.prettyJSON());let t=e.repo,s=a__namespace.getInput("token")||await a__namespace.getIDToken(),p=i__namespace.getOctokit(s);try{let n=await p.request("POST /repos/{owner}/{repo}/dependency-graph/snapshots",{headers:{accept:"application/vnd.github.foo-bar-preview+json"},owner:t.owner,repo:t.repo,...r}),d=n.data.result;d==="SUCCESS"||d==="ACCEPTED"?a__namespace.notice(`Snapshot successfully created at ${n.data.created_at.toString()}`):a__namespace.error(`Snapshot creation failed with result: "${d}: ${n.data.message}"`);}catch(n){throw n instanceof requestError.RequestError&&(a__namespace.error(`HTTP Status ${n.status} for request ${n.request.method} ${n.request.url}`),n.response&&a__namespace.error(`Response body:
+${JSON.stringify(n.response.data,void 0,2)}`)),n instanceof Error&&(a__namespace.error(n.message),n.stack&&a__namespace.error(n.stack)),new Error(`Failed to submit snapshot: ${n}`)}}
+
+exports.BuildTarget = u;
+exports.Manifest = g;
+exports.Package = c;
+exports.PackageCache = h;
+exports.Snapshot = l;
+exports.jobFromContext = y;
+exports.shaFromContext = P;
+exports.submitSnapshot = L;
+//# sourceMappingURL=out.js.map
+//# sourceMappingURL=index.cjs.map
+
 /***/ })
 
 /******/ 	});
@@ -35638,84 +35686,48 @@ module.exports = parseParams
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__nccwpck_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-"use strict";
-// ESM COMPAT FLAG
-__nccwpck_require__.r(__webpack_exports__);
-
-// EXTERNAL MODULE: ./node_modules/packageurl-js/index.js
-var packageurl_js = __nccwpck_require__(8915);
-// EXTERNAL MODULE: ./node_modules/@github/dependency-submission-toolkit/node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(6491);
-// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
-var github = __nccwpck_require__(5438);
-// EXTERNAL MODULE: ./node_modules/@octokit/request-error/dist-node/index.js
-var dist_node = __nccwpck_require__(537);
-;// CONCATENATED MODULE: ./node_modules/@github/dependency-submission-toolkit/dist/index.js
-
-
-
-
-
-var o=class{depPackage;relationship;scope;constructor(e,t,s){this.depPackage=e,t!==void 0&&(this.relationship=t),s!==void 0&&(this.scope=s);}toJSON(){return {package_url:this.depPackage.packageURL.toString(),relationship:this.relationship,scope:this.scope,dependencies:this.depPackage.packageDependencyIDs}}},g=class{resolved;name;file;constructor(e,t){this.resolved={},this.name=e,t&&(this.file={source_location:t});}addDirectDependency(e,t){this.resolved[e.packageID()]=new o(e,"direct",t);}addIndirectDependency(e,t){this.resolved[e.packageID()]??=new o(e,"indirect",t);}hasDependency(e){return this.lookupDependency(e)!==void 0}lookupDependency(e){return this.resolved[e.packageID()]}countDependencies(){return Object.keys(this.resolved).length}filterDependencies(e){return Object.values(this.resolved).reduce((t,s)=>(e(s)&&t.push(s.depPackage),t),[])}directDependencies(){return this.filterDependencies(e=>e.relationship==="direct")}indirectDependencies(){return this.filterDependencies(e=>e.relationship==="indirect")}},u=class extends (/* unused pure expression or super */ null && (g)){addBuildDependency(e){this.addDirectDependency(e,"runtime");for(let t of e.dependencies)this.addIndirectDependency(t,"runtime");}};var c=class{packageURL;dependencies;constructor(e){typeof e=="string"?this.packageURL=packageurl_js.PackageURL.fromString(e):this.packageURL=e,this.dependencies=[];}dependsOn(e){return this.dependencies.push(e),this}dependsOnPackages(e){for(let t of e)this.dependsOn(t);return this}get packageDependencyIDs(){return this.dependencies.map(e=>e.packageID())}packageID(){return this.packageURL.toString()}namespace(){return this.packageURL.namespace??null}name(){return this.packageURL.name}version(){return this.packageURL.version||""}matching(e){return (e.namespace===void 0||this.packageURL.namespace===e.namespace)&&(e.name===void 0||this.packageURL.name===e.name)&&(e.version===void 0||this.packageURL.version===e.version)}};var h=class{database;constructor(){this.database={};}package(e){let t=this.lookupPackage(e);if(t)return t;let s=new c(e);return this.addPackage(s),s}packagesMatching(e){return Object.values(this.database).filter(t=>t.matching(e))}addPackage(e){this.database[e.packageURL.toString()]=e;}removePackage(e){delete this.database[e.packageURL.toString()];}lookupPackage(e){if(typeof e=="string"){let t=PackageURL.fromString(e);return this.database[t.toString()]}return this.database[e.toString()]}hasPackage(e){return this.lookupPackage(e)!==void 0}countPackages(){return Object.values(this.database).length}};function y(r){return {correlator:r.job,id:r.runId.toString()}}function P(r){return ["pull_request","pull_request_comment","pull_request_review","pull_request_review_comment"].includes(r.eventName)?r.payload.pull_request.head.sha:r.sha}var l=class{manifests;version;job;sha;ref;scanned;detector;constructor(e,t=github.context,s,p=new Date,n=0){this.detector=e,this.version=n,this.job=s||y(t),this.sha=P(t),this.ref=t.ref,this.scanned=p.toISOString(),this.manifests={};}addManifest(e){this.manifests[e.name]=e;}prettyJSON(){return JSON.stringify(this,void 0,4)}};async function L(r,e=github.context){core.setOutput("snapshot",JSON.stringify(r)),core.notice("Submitting snapshot..."),core.notice(r.prettyJSON());let t=e.repo,s=core.getInput("token")||await core.getIDToken(),p=github.getOctokit(s);try{let n=await p.request("POST /repos/{owner}/{repo}/dependency-graph/snapshots",{headers:{accept:"application/vnd.github.foo-bar-preview+json"},owner:t.owner,repo:t.repo,...r}),d=n.data.result;d==="SUCCESS"||d==="ACCEPTED"?core.notice(`Snapshot successfully created at ${n.data.created_at.toString()}`):core.error(`Snapshot creation failed with result: "${d}: ${n.data.message}"`);}catch(n){throw n instanceof dist_node.RequestError&&(core.error(`HTTP Status ${n.status} for request ${n.request.method} ${n.request.url}`),n.response&&core.error(`Response body:
-${JSON.stringify(n.response.data,void 0,2)}`)),n instanceof Error&&(core.error(n.message),n.stack&&core.error(n.stack)),new Error(`Failed to submit snapshot: ${n}`)}}
-
-
-//# sourceMappingURL=out.js.map
-//# sourceMappingURL=index.js.map
-;// CONCATENATED MODULE: ./index.js
-const index_core = __nccwpck_require__(2186);
-const index_github = __nccwpck_require__(5438);
+const core = __nccwpck_require__(2186);
+const github = __nccwpck_require__(5438);
 const fs = __nccwpck_require__(7147);
 const glob = __nccwpck_require__(1957);
 
-
+const toolkit = __nccwpck_require__(3415);
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
   
-  let snapshot = new l({
+  let snapshot = new toolkit.Snapshot({
       name: "spdx-to-dependency-graph-action",
       version: "0.0.1",
       url: "https://github.com/advanced-security/spdx-dependency-submission-action",
   }, 
-  index_github.context,
+  github.context,
   {
-    correlator:`${index_github.context.job}`,
-    id: index_github.context.runId.toString()
+    correlator:`${github.context.job}`,
+    id: github.context.runId.toString()
   });
 
   manifests?.forEach(manifest => {
     snapshot.addManifest(manifest);
   });
 
-  L(snapshot);
+  toolkit.submitSnapshot(snapshot);
 }
 
 function getManifestFromSpdxFile(document, fileName) {
-  index_core.debug(`getManifestFromSpdxFile processing ${fileName}`);
+  core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
-  let manifest = new g(document.name, fileName);
+  let manifest = new toolkit.Manifest(document.name, fileName);
 
-  index_core.debug(`Processing ${document.packages?.length} packages`);
+  core.debug(`Processing ${document.packages?.length} packages`);
 
   document.packages?.forEach(pkg => {
     let packageName = pkg.name;
@@ -35738,27 +35750,27 @@ function getManifestFromSpdxFile(document, fileName) {
 
     let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
     if (relationships != null && relationships.length > 0) {
-      manifest.addIndirectDependency(new c(purl));
+      manifest.addIndirectDependency(new toolkit.Package(purl));
     } else {
-      manifest.addDirectDependency(new c(purl));
+      manifest.addDirectDependency(new toolkit.Package(purl));
     }
   });
   return manifest;
 }
 
 function getManifestsFromSpdxFiles(files) {
-  index_core.debug(`Processing ${files.length} files`);
+  core.debug(`Processing ${files.length} files`);
   let manifests = [];
   files?.forEach(file => {
-    index_core.debug(`Processing ${file}`);
+    core.debug(`Processing ${file}`);
     manifests.push(getManifestFromSpdxFile(JSON.parse(fs.readFileSync(file)), file));
   });
   return manifests;
 }
 
 function searchFiles() {
-  let filePath = index_core.getInput('filePath');
-  let filePattern = index_core.getInput('filePattern');
+  let filePath = core.getInput('filePath');
+  let filePattern = core.getInput('filePattern');
 
   return glob.sync(`${filePath}/${filePattern}`, {});
 }
