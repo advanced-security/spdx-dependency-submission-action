@@ -35778,7 +35778,9 @@ function searchFiles() {
 // Fixes issues with an escaped version string
 function replaceVersionEscape(purl) {
   // Some tools are failing to escape the namespace, so we will escape it to work around that
-  purl = purl.replace("/@", "/%40");
+  // @ -> %40
+  // ^ -> %5E
+  purl = purl.replace("/@", "/%40").replace("^", "%5E");
 
   //If there's an "@" in the purl, then we don't need to do anything.
   if (purl != null && purl != undefined && !purl?.includes("@")) {
