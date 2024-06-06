@@ -1,0 +1,9 @@
+name: "spdx-dependency-submission-action"
+version: 0.1.0
+
+locations:
+  - name: "Docs"
+    paths:
+      - "README.md"
+    patterns:
+      - 'advanced-security/spdx-dependency-submission-action@v([0-9]\.[0-9]\.[0-9])'

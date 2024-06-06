@@ -1,4 +1,5 @@
 name: "Test"
+
 on:
   pull_request:
   workflow_dispatch:
@@ -6,15 +7,27 @@ on:
     branches:
       - main
       - 'releases/*'
-  workflow_dispatch:
 
 permissions: 
   id-token: write
   contents: write
 
 jobs:
+  test-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set Node.js latest
+        uses: actions/setup-node@v4.0.2
+        with:
+          node-version: latest
+
+      - run: |
+          npm ci
+          # npm run test
+      
   # test action works running from the graph
-  test:
+  test-action:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4

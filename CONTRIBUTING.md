@@ -1,4 +1,4 @@
-## Contributing
+# Contributing
 
 [fork]: https://github.com/advanced-security/spdx-to-dependency-graph-action/fork
 [pr]: https://github.com/github/spdx-to-dependency-graph-action/compare
