@@ -21,7 +21,7 @@ const toolkit = __nccwpck_require__(3415);
  * @param {string} fileName - The name of the file from which the SPDX document was extracted.
  * @returns {Object} A manifest object containing the processed package data, including direct and indirect dependencies.
  */
-module.exports.getManifestFromSpdxFile = (document, fileName) => {
+function getManifestFromSpdxFile(document, fileName) {
     core.debug(`getManifestFromSpdxFile processing ${fileName}`);
 
     let manifest = new toolkit.Manifest(document.name, fileName);
@@ -71,7 +71,7 @@ module.exports.getManifestFromSpdxFile = (document, fileName) => {
  * @param {string[]} files - An array of file paths pointing to SPDX files.
  * @returns {Object[]} An array of manifest objects extracted from the SPDX files.
  */
-module.exports.getManifestsFromSpdxFiles = (files) => {
+function getManifestsFromSpdxFiles(files) {
     core.debug(`Processing ${files.length} files`);
     let manifests = [];
     files?.forEach(file => {
@@ -87,7 +87,7 @@ module.exports.getManifestsFromSpdxFiles = (files) => {
  *
  * @returns {string[]} An array of strings representing the paths of files that match the given pattern within the specified path.
  */
-module.exports.searchFiles = () => {
+function searchFiles() {
     let filePath = core.getInput('filePath');
     let filePattern = core.getInput('filePattern');
 
@@ -102,7 +102,7 @@ module.exports.searchFiles = () => {
  * @param {string} purl - The package URL to be processed.
  * @returns {string} The processed package URL with the necessary characters escaped or unescaped.
  */
-module.exports.replaceVersionEscape = (purl) => {
+function replaceVersionEscape(purl) {
     // Some tools are failing to escape the namespace, so we will escape it to work around that
     // @ -> %40
     // ^ -> %5E
@@ -117,6 +117,15 @@ module.exports.replaceVersionEscape = (purl) => {
     }
     return purl;
 }
+
+// Exports
+module.exports = {
+    getManifestFromSpdxFile,
+    getManifestsFromSpdxFiles,
+    searchFiles,
+    replaceVersionEscape
+}
+
 
 /***/ }),
 
