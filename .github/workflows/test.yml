@@ -24,7 +24,7 @@ jobs:
 
       - run: |
           npm ci
-          # npm run test
+          npm run test
       
   # test action works running from the graph
   test-action:
