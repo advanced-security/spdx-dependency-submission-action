@@ -35819,11 +35819,10 @@ const fs = __nccwpck_require__(7147);
 const glob = __nccwpck_require__(1957);
 
 const toolkit = __nccwpck_require__(3415);
-
-const { getManifestsFromSpdxFiles, searchFiles } = __nccwpck_require__(4822);
+const lib = __nccwpck_require__(4822);
 
 async function run() {
-  let manifests = getManifestsFromSpdxFiles(searchFiles());
+  let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
   
   let snapshot = new toolkit.Snapshot({
       name: "spdx-to-dependency-graph-action",
