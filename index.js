@@ -4,11 +4,10 @@ const fs = require('fs');
 const glob = require('glob');
 
 const toolkit = require('@github/dependency-submission-toolkit');
-
-const { getManifestsFromSpdxFiles, searchFiles } = require('./lib');
+const lib = require('./lib');
 
 async function run() {
-  let manifests = getManifestsFromSpdxFiles(searchFiles());
+  let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
   
   let snapshot = new toolkit.Snapshot({
       name: "spdx-to-dependency-graph-action",
