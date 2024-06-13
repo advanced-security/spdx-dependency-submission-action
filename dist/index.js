@@ -35830,19 +35830,21 @@ const glob = __nccwpck_require__(1957);
 const toolkit = __nccwpck_require__(3415);
 const lib = __nccwpck_require__(4822);
 
+const VERSION = "0.1.1";
+
 async function run() {
   let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
-  
+
   let snapshot = new toolkit.Snapshot({
-      name: "spdx-to-dependency-graph-action",
-      version: "0.1.1",
-      url: "https://github.com/advanced-security/spdx-dependency-submission-action",
-  }, 
-  github.context,
-  {
-    correlator:`${github.context.job}`,
-    id: github.context.runId.toString()
-  });
+    name: "spdx-to-dependency-graph-action",
+    version: VERSION,
+    url: "https://github.com/advanced-security/spdx-dependency-submission-action",
+  },
+    github.context,
+    {
+      correlator: `${github.context.job}`,
+      id: github.context.runId.toString()
+    });
 
   manifests?.forEach(manifest => {
     snapshot.addManifest(manifest);
