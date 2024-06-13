@@ -1,7 +1,13 @@
 name: "spdx-dependency-submission-action"
-version: 0.1.0
+version: 0.1.1
 
 locations:
+  - name: "Inline Version"
+    paths:
+      - index.js
+    patterns:
+      - 'const VERSION\s*=\s*"([0-9]\.[0-9]\.[0-9])"'
+
   - name: "Docs"
     paths:
       - "README.md"
