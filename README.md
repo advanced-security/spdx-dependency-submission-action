@@ -40,6 +40,23 @@ jobs:
         filePath: "_manifest/spdx_2.2/"
 ```
 
+Add support for running inside a matrix by overriding the default correlater unique identifier to include the job+matrix values.  Consider these sample steps:
+
+```yaml
+      # Format corrleator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
+      - name: Define correlator
+        id: matrix_parser
+        run: |
+            correlator=$(echo '${{ toJSON(matrix) }}' | jq -r 'if . == null then "${{ github.job }}" else "${{ github.job }}(" + ([.[] | tostring] | join(", ")) + ")" end')
+            echo "correlator=$correlator" >> $GITHUB_OUTPUT
+
+      - name: SBOM upload
+        uses: advanced-security/spdx-dependency-submission-action@v0.1.1
+        with:
+          filePath: "${{ matrix.sbom }}"
+          correlator: ${{ steps.matrix_parser.outputs.correlator }}
+```
+
 ## Support
 
 Please create [GitHub Issues][github-issues] if there are bugs or feature requests.

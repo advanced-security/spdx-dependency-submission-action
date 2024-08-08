@@ -11,6 +11,7 @@ const VERSION = "0.1.1";
 async function run() {
   let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
 
+  const correlator = core.getInput('correlator');
   let snapshot = new toolkit.Snapshot({
     name: "spdx-to-dependency-graph-action",
     version: VERSION,
@@ -18,7 +19,7 @@ async function run() {
   },
     github.context,
     {
-      correlator: `${github.context.job}`,
+      correlator: correlator,
       id: github.context.runId.toString()
     });
 
