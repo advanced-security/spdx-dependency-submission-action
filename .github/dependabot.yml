@@ -6,9 +6,8 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
+      - "advanced-security/advanced-security-dependency-graph"
       - "advanced-security/oss-maintainers"
-      - "lseppala"
-      - "courtneycl"
     target-branch: "main"
     commit-message:
       prefix: deps
@@ -27,9 +26,8 @@ updates:
     schedule:
       interval: "weekly"
     reviewers:
+      - "advanced-security/advanced-security-dependency-graph"
       - "advanced-security/oss-maintainers"
-      - "lseppala"
-      - "courtneycl"
     target-branch: "main"
     commit-message:
       prefix: deps
