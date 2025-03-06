@@ -13,6 +13,10 @@ inputs:
     description: 'The file name pattern for SPDX files to upload'
     required: false
     default: '*.spdx.json'
+  correlator:
+    description: 'The correlator property itself is the primary field used to keep independent submissions distinct.'
+    required: false
+    default: ${{ github.job }} 
 runs:
   using: 'node20'
   main: 'dist/index.js'
