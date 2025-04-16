@@ -24,13 +24,13 @@ jobs:
       contents: write
       
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Generate SBOM
       run: | 
         curl -Lo $RUNNER_TEMP/sbom-tool https://github.com/microsoft/sbom-tool/releases/latest/download/sbom-tool-linux-x64
         chmod +x $RUNNER_TEMP/sbom-tool
         $RUNNER_TEMP/sbom-tool generate -b . -bc . -pn ${{ github.repository }} -pv 1.0.0 -ps OwnerName -nsb https://sbom.mycompany.com -V Verbose
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: sbom
         path: _manifest/spdx_2.2
