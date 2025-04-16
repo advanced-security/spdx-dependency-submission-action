@@ -26,12 +26,12 @@ jobs:
           npm ci
           npm run test
       
-  # test action works running from the graph
+  # Exclude running this on external forks due to permissions issue
   test-action:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}    
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - uses: ./
       with:
         filePath: "test"
-        
