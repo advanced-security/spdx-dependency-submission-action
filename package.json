@@ -26,8 +26,8 @@
   },
   "homepage": "https://github.com/advanced-security/spdx-dependency-submission-action#readme",
   "dependencies": {
-    "@actions/core": "2.0.1",
-    "@actions/github": "6.0.1",
+    "@actions/core": "2.0.2",
+    "@actions/github": "7.0.0",
     "@github/dependency-submission-toolkit": "2.0.5"
   },
   "devDependencies": {
