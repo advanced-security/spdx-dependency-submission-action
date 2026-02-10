@@ -2,12 +2,13 @@
   "name": "spdx-to-dependency-graph-action",
   "version": "0.1.1",
   "description": "SPDX to Dependency Graph Action",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "cli": "node index.js",
     "lint": "eslint .",
     "prepare": "ncc build index.js -o dist --source-map --license licenses.txt",
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "all": "npm run lint && npm run prepare && npm run test"
   },
   "repository": {
@@ -26,13 +27,15 @@
   },
   "homepage": "https://github.com/advanced-security/spdx-dependency-submission-action#readme",
   "dependencies": {
-    "@actions/core": "2.0.2",
-    "@actions/github": "7.0.0",
+    "@actions/core": "3.0.0",
+    "@actions/github": "9.0.0",
     "@github/dependency-submission-toolkit": "2.0.5"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@vercel/ncc": "^0.38.4",
     "eslint": "^10.0.0",
+    "globals": "^17.3.0",
     "jest": "^30.2.0"
   }
 }

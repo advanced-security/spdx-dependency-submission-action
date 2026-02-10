@@ -1,10 +1,8 @@
-const core = require('@actions/core');
-const github = require('@actions/github');
-const fs = require('fs');
-const glob = require('glob');
+import * as core from '@actions/core';
+import { context } from '@actions/github';
 
-const toolkit = require('@github/dependency-submission-toolkit');
-const lib = require('./lib');
+import * as toolkit from '@github/dependency-submission-toolkit';
+import * as lib from './lib/index.js';
 
 const VERSION = "0.1.1";
 
@@ -17,10 +15,10 @@ async function run() {
     version: VERSION,
     url: "https://github.com/advanced-security/spdx-dependency-submission-action",
   },
-    github.context,
+    context,
     {
       correlator: correlator,
-      id: github.context.runId.toString()
+      id: context.runId.toString()
     });
 
   manifests?.forEach(manifest => {
