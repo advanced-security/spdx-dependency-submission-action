@@ -35,7 +35,7 @@ jobs:
         name: sbom
         path: _manifest/spdx_2.2
     - name: SBOM upload 
-      uses: advanced-security/spdx-dependency-submission-action@v0.1.1
+      uses: advanced-security/spdx-dependency-submission-action@v0.2.0
       with:
         filePath: "_manifest/spdx_2.2/"
 ```
@@ -51,7 +51,7 @@ Add support for running inside a matrix by overriding the default correlater uni
             echo "correlator=$correlator" >> $GITHUB_OUTPUT
 
       - name: SBOM upload
-        uses: advanced-security/spdx-dependency-submission-action@v0.1.1
+        uses: advanced-security/spdx-dependency-submission-action@v0.2.0
         with:
           filePath: "${{ matrix.sbom }}"
           correlator: ${{ steps.matrix_parser.outputs.correlator }}
