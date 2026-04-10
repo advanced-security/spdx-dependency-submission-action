@@ -17843,12 +17843,12 @@
       ],
       "licenseDeclared": "NOASSERTION",
       "copyrightText": "NOASSERTION",
-      "versionInfo": "4.4.3",
+      "versionInfo": "4.7.9",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/handlebars%404.4.3"
+          "referenceLocator": "pkg:npm/handlebars%404.7.9"
         }
       ],
       "supplier": "NOASSERTION"
