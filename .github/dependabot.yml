@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 3
     reviewers:
       - "advanced-security/advanced-security-dependency-graph"
       - "advanced-security/oss-maintainers"
@@ -15,16 +17,16 @@ updates:
     labels:
       - "Dependencies"
     groups:
-      production-dependencies:
-        dependency-type: "production"
-      development-dependencies:
-        dependency-type: "development"
+      actions:
+        patterns: ["*"]
 
   # ---------- JS / TS / NPM ----------
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 3
     reviewers:
       - "advanced-security/advanced-security-dependency-graph"
       - "advanced-security/oss-maintainers"
