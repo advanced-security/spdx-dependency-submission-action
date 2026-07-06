@@ -26,6 +26,9 @@
     "url": "https://github.com/advanced-security/spdx-dependency-submission-action/issues"
   },
   "homepage": "https://github.com/advanced-security/spdx-dependency-submission-action#readme",
+  "overrides": {
+    "undici": "6.27.0"
+  },
   "dependencies": {
     "@actions/core": "3.0.0",
     "@actions/github": "9.0.0",
