@@ -52160,8 +52160,12 @@ function getManifestFromSpdxFile(document, fileName) {
             // Find the last instance of %40 and replace it with @
             purl = replaceVersionEscape(purl);
 
-            let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
-            if (relationships != null && relationships.length > 0) {
+            const hasNonRootParent = document.relationships?.some(rel =>
+                rel.relatedSpdxElement === pkg.SPDXID &&
+                rel.relationshipType === "DEPENDS_ON" &&
+                rel.spdxElementId !== "SPDXRef-RootPackage"
+            ) ?? false;
+            if (hasNonRootParent) {
                 manifest.addIndirectDependency(new c(purl));
             } else {
                 manifest.addDirectDependency(new c(purl));
