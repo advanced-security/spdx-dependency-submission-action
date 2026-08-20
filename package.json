@@ -36,9 +36,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vercel/ncc": "^0.38.4",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0",
-    "jest": "^30.2.0"
+    "@vercel/ncc": "^0.45.0",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "jest": "^30.4.2"
   }
 }
