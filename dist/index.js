@@ -52167,16 +52167,18 @@ function getManifestFromSpdxFile(document, fileName) {
                 isDependencyParent(rel) &&
                 rel.spdxElementId === "SPDXRef-RootPackage"
             ) ?? false;
-            const hasNonRootParent = document.relationships?.some(rel =>
-                isDependencyParent(rel) &&
-                rel.spdxElementId !== "SPDXRef-RootPackage"
-            ) ?? false;
             if (hasRootParent) {
                 manifest.addDirectDependency(new c(purl));
-            } else if (hasNonRootParent) {
-                manifest.addIndirectDependency(new c(purl));
             } else {
-                manifest.addDirectDependency(new c(purl));
+                const hasNonRootParent = document.relationships?.some(rel =>
+                    isDependencyParent(rel) &&
+                    rel.spdxElementId !== "SPDXRef-RootPackage"
+                ) ?? false;
+                if (hasNonRootParent) {
+                    manifest.addIndirectDependency(new c(purl));
+                } else {
+                    manifest.addDirectDependency(new c(purl));
+                }
             }
         }
         catch (error) {
