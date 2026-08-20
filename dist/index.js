@@ -52160,14 +52160,15 @@ function getManifestFromSpdxFile(document, fileName) {
             // Find the last instance of %40 and replace it with @
             purl = replaceVersionEscape(purl);
 
-            const hasRootParent = document.relationships?.some(rel =>
+            const isDependencyParent = rel =>
                 rel.relatedSpdxElement === pkg.SPDXID &&
-                rel.relationshipType === "DEPENDS_ON" &&
+                rel.relationshipType === "DEPENDS_ON";
+            const hasRootParent = document.relationships?.some(rel =>
+                isDependencyParent(rel) &&
                 rel.spdxElementId === "SPDXRef-RootPackage"
             ) ?? false;
             const hasNonRootParent = document.relationships?.some(rel =>
-                rel.relatedSpdxElement === pkg.SPDXID &&
-                rel.relationshipType === "DEPENDS_ON" &&
+                isDependencyParent(rel) &&
                 rel.spdxElementId !== "SPDXRef-RootPackage"
             ) ?? false;
             if (hasRootParent) {
