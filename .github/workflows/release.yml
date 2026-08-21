@@ -42,7 +42,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   # workflow_dispatch + bump: open a PR bumping .release.yml and every location it tracks
@@ -91,6 +90,9 @@ jobs:
   manual-release:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
     uses: advanced-security/reusable-workflows/.github/workflows/release.yml@v0.3.5
+    permissions:
+      contents: write
+      pull-requests: write
     secrets: inherit
     with:
       version: ${{ inputs.version }}
@@ -150,6 +152,9 @@ jobs:
     needs: [fetch-release]
     if: ${{ needs.fetch-release.outputs.release == 'true' }}
     uses: advanced-security/reusable-workflows/.github/workflows/release.yml@v0.3.5
+    permissions:
+      contents: write
+      pull-requests: write
     secrets: inherit
     with:
       version: ${{ needs.fetch-release.outputs.version }}
