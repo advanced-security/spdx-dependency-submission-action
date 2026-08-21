@@ -1,15 +1,22 @@
 name: "spdx-dependency-submission-action"
-version: 0.1.1
+repository: "advanced-security/spdx-dependency-submission-action"
+version: "0.2.0"
 
 locations:
+  - name: "NPM Package"
+    paths:
+      - package.json
+    patterns:
+      - '"version":\s*"([0-9]+\.[0-9]+\.[0-9]+)"'
+
   - name: "Inline Version"
     paths:
       - index.js
     patterns:
-      - 'const VERSION\s*=\s*"([0-9]\.[0-9]\.[0-9])"'
+      - 'const VERSION\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"'
 
   - name: "Docs"
     paths:
       - "README.md"
     patterns:
-      - 'advanced-security/spdx-dependency-submission-action@v([0-9]\.[0-9]\.[0-9])'
+      - 'advanced-security/spdx-dependency-submission-action@v([0-9]+\.[0-9]+\.[0-9]+)'
