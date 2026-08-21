@@ -56,12 +56,28 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Patch Release Me
-        # Pinned to 0.6.5, not the latest 0.6.6: the 0.6.6 release never published a container
-        # image to ghcr.io (upstream bug, see https://github.com/42ByteLabs/patch-release-me/issues/159).
-        # Bump back to a 0.6.6+ SHA once that's fixed and a new image is published.
-        uses: 42ByteLabs/patch-release-me@431a82795eda94d09b3821da9391c53ab287e84d # 0.6.5
-        with:
-          mode: ${{ inputs.bump }}
+        # Invoke the pinned patch-release-me image directly via `docker run` instead of
+        # `uses: 42ByteLabs/patch-release-me@...`. That action's own action.yml builds its
+        # Docker CMD as a single YAML list item (`-m "${{ inputs.mode }}"`); Docker container
+        # actions don't go through a shell, so the literal quote characters end up baked into
+        # ONE argv token (`-m "minor"`). clap can't match that against "patch"/"minor"/"major"
+        # and silently falls back to its own default (Patch) - so `bump: minor`/`major` have
+        # always quietly produced a patch bump instead (see
+        # https://github.com/42ByteLabs/patch-release-me/issues/161, fixed upstream in
+        # https://github.com/42ByteLabs/patch-release-me/pull/162, not yet merged/released).
+        # Running the same pinned image ourselves via a normal shell `run:` step naturally
+        # splits `-m` and the mode value into separate argv entries, avoiding the bug entirely.
+        # Pinned by digest (not just tag) so the exact image content can't change out from
+        # under us - digest corresponds to the 0.6.5 tag, the last one with a published image
+        # (see https://github.com/42ByteLabs/patch-release-me/issues/159 for why 0.6.6 isn't used).
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -v "${{ github.workspace }}:/repo" \
+            -w /repo \
+            ghcr.io/42bytelabs/patch-release-me@sha256:d9d7abe7051855d0c395fec99d931acc002fb6b299ca16b8123e2c8ef0c7e750 \
+            --disable-banner bump -m ${{ inputs.bump }}
 
       - name: Setup Node
         uses: actions/setup-node@v7.0.0
