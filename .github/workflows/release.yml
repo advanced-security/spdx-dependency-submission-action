@@ -42,13 +42,15 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   # workflow_dispatch + bump: open a PR bumping .release.yml and every location it tracks
   bump-version:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.version == '' && inputs.bump != 'none' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -95,8 +97,10 @@ jobs:
 
   # push to main: release automatically once .release.yml's version no longer matches the latest release
   fetch-release:
-    if: ${{ github.event_name == 'push' && github.repository == 'advanced-security/spdx-dependency-submission-action' }}
+    if: ${{ github.event_name == 'push' && !github.event.repository.fork }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       release: ${{ steps.check.outputs.release }}
       version: ${{ steps.check.outputs.version }}
@@ -109,17 +113,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -e
+          set -euo pipefail
+
           current_version=$(grep -m1 -E '^version:' .release.yml | sed -E 's/^version:[[:space:]]*"?([0-9]+\.[0-9]+\.[0-9]+)"?.*/\1/')
-          released_version=$(gh api "/repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name' 2>/dev/null | sed 's/^v//' || echo "")
-
-          echo "Current .release.yml version: $current_version"
-          echo "Latest GitHub release:        ${released_version:-<none>}"
-
           if [ -z "$current_version" ]; then
             echo "::error::Could not read a version from .release.yml"
             exit 1
           fi
+
+          # A real 404 means "no releases yet" (e.g. brand-new repo) and is expected. Any other
+          # gh api failure (auth, rate-limit, network) must not be silently treated as "no release
+          # found" - that would let a transient error trigger an unintended release.
+          released_version=""
+          if latest_tag=$(gh api "/repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name' 2>/tmp/gh-api-err.log); then
+            released_version="${latest_tag#v}"
+          elif ! grep -q "HTTP 404" /tmp/gh-api-err.log; then
+            echo "::error::Failed to look up the latest release:"
+            cat /tmp/gh-api-err.log
+            exit 1
+          fi
+
+          echo "Current .release.yml version: $current_version"
+          echo "Latest GitHub release:        ${released_version:-<none>}"
 
           if [ "$current_version" = "$released_version" ]; then
             echo "No new release needed - versions match"
