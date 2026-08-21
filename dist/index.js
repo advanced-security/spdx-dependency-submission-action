@@ -52276,6 +52276,19 @@ function getManifestFromSpdxFile(document, fileName) {
 
     core_debug(`Processing ${document.packages?.length} packages`);
 
+    const rootDependencies = new Set();
+    const nonRootDependencies = new Set();
+    for (const relationship of document.relationships ?? []) {
+        if (relationship.relationshipType !== "DEPENDS_ON") {
+            continue;
+        }
+
+        const dependencies = relationship.spdxElementId === "SPDXRef-RootPackage"
+            ? rootDependencies
+            : nonRootDependencies;
+        dependencies.add(relationship.relatedSpdxElement);
+    }
+
     document.packages?.forEach(pkg => {
         let packageName = pkg.name;
         let packageVersion = pkg.packageVersion;
@@ -52296,11 +52309,13 @@ function getManifestFromSpdxFile(document, fileName) {
             // Find the last instance of %40 and replace it with @
             purl = replaceVersionEscape(purl);
 
-            let relationships = document.relationships?.find(rel => rel.relatedSpdxElement == pkg.SPDXID && rel.relationshipType == "DEPENDS_ON" && rel.spdxElementId != "SPDXRef-RootPackage");
-            if (relationships != null && relationships.length > 0) {
-                manifest.addIndirectDependency(new c(purl));
-            } else {
+            const isDirectDependency =
+                rootDependencies.has(pkg.SPDXID) ||
+                !nonRootDependencies.has(pkg.SPDXID);
+            if (isDirectDependency) {
                 manifest.addDirectDependency(new c(purl));
+            } else {
+                manifest.addIndirectDependency(new c(purl));
             }
         }
         catch (error) {
