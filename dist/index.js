@@ -52411,7 +52411,7 @@ function replaceVersionEscape(purl) {
 
 
 
-const index_VERSION = "0.1.1";
+const index_VERSION = "0.2.0";
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());

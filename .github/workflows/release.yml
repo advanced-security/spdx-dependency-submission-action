@@ -115,7 +115,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          current_version=$(grep -m1 -E '^version:' .release.yml | sed -E 's/^version:[[:space:]]*"?([0-9]+\.[0-9]+\.[0-9]+)"?.*/\1/')
+          current_version=$(grep -m1 -E '^version:' .release.yml | sed -n -E 's/^version:[[:space:]]*"?([0-9]+\.[0-9]+\.[0-9]+)"?.*/\1/p')
           if [ -z "$current_version" ]; then
             echo "::error::Could not read a version from .release.yml"
             exit 1
