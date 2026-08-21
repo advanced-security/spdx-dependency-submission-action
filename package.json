@@ -26,6 +26,9 @@
     "url": "https://github.com/advanced-security/spdx-dependency-submission-action/issues"
   },
   "homepage": "https://github.com/advanced-security/spdx-dependency-submission-action#readme",
+  "overrides": {
+    "undici": "6.27.0"
+  },
   "dependencies": {
     "@actions/core": "3.0.1",
     "@actions/github": "9.1.1",
@@ -33,9 +36,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vercel/ncc": "^0.38.4",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0",
-    "jest": "^30.2.0"
+    "@vercel/ncc": "^0.45.0",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "jest": "^30.4.2"
   }
 }
