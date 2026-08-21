@@ -1,6 +1,6 @@
 {
   "name": "spdx-to-dependency-graph-action",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "SPDX to Dependency Graph Action",
   "type": "module",
   "main": "index.js",
