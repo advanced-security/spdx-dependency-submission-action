@@ -1,6 +1,6 @@
 name: "spdx-dependency-submission-action"
 repository: "advanced-security/spdx-dependency-submission-action"
-version: "0.2.0"
+version: "0.3.0"
 
 locations:
   - name: "Node Manifest"
