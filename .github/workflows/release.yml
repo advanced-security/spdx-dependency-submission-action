@@ -56,7 +56,10 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Patch Release Me
-        uses: 42ByteLabs/patch-release-me@04ea0a696abfc3cfbdfadb279bd9c9dd0b1652a2 # 0.6.6
+        # Pinned to 0.6.5, not the latest 0.6.6: the 0.6.6 release never published a container
+        # image to ghcr.io (upstream bug, see https://github.com/42ByteLabs/patch-release-me/issues/159).
+        # Bump back to a 0.6.6+ SHA once that's fixed and a new image is published.
+        uses: 42ByteLabs/patch-release-me@431a82795eda94d09b3821da9391c53ab287e84d # 0.6.5
         with:
           mode: ${{ inputs.bump }}
 
