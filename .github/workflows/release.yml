@@ -91,6 +91,19 @@ jobs:
       - name: Sync package-lock.json
         run: npm install --package-lock-only --ignore-scripts
 
+      # dist/index.js is a committed, compiled bundle (see check-dist.yml) - it embeds the same
+      # VERSION const patched in index.js above, so it goes stale the moment that bump happens.
+      # This bump-version job is the only automated path that changes the version, so it's also
+      # the only place that needs to rebuild dist/ to match; mirrors check-dist.yml's own build
+      # step exactly so this PR's dist/ is byte-for-byte what check-dist expects. Needs a real
+      # `npm ci` (not --package-lock-only) to get devDependencies like @vercel/ncc installed;
+      # package-lock.json is back in sync as of the step above, so this now succeeds.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild dist/
+        run: npm run prepare
+
       - name: Create Release PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
@@ -101,7 +114,8 @@ jobs:
           labels: version
           body: |
             Automated PR to bump the version tracked in `.release.yml`, and every location it
-            patches (`package.json`, `index.js`, `README.md`), plus a resynced `package-lock.json`.
+            patches (`package.json`, `index.js`, `README.md`), plus a resynced `package-lock.json`
+            and a freshly rebuilt `dist/`.
 
             Merging this to `main` automatically publishes a GitHub Release for the new version.
 
