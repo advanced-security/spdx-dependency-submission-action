@@ -52279,6 +52279,7 @@ glob.glob = glob;
 
 
 
+
 /**
  * Extracts and constructs a manifest object from an SPDX document for a given file.
  * This function processes an SPDX document, iterating over its packages to construct a manifest.
@@ -52378,6 +52379,48 @@ function searchFiles() {
 }
 
 /**
+ * Builds a GitHub context for a target repository submission.
+ * Clears the workflow event name so the toolkit uses the target SHA instead of a pull request payload SHA.
+ *
+ * @param {Object} defaultContext - The GitHub Actions workflow context.
+ * @param {string} workingDirectory - The checked-out target repository directory.
+ * @returns {Object} The workflow context or a context for the target repository.
+ */
+function getSubmissionContext(defaultContext, workingDirectory = process.cwd()) {
+    const repo = getInput('repo');
+    if (!repo) {
+        return defaultContext;
+    }
+
+    return {
+        ...defaultContext,
+        eventName: '',
+        repo: {
+            owner: getInput('owner') || defaultContext.repo.owner,
+            repo
+        },
+        sha: getInput('repoSha') || getGitValue(['rev-parse', 'HEAD'], 'repoSha', workingDirectory),
+        ref: getInput('repoRef') || getGitValue(['symbolic-ref', 'HEAD'], 'repoRef', workingDirectory)
+    };
+}
+
+function getGitValue(args, input, workingDirectory) {
+    try {
+        const value = (0,external_child_process_.execFileSync)('git', args, {
+            cwd: workingDirectory,
+            encoding: 'utf8'
+        }).trim();
+        if (value) {
+            return value;
+        }
+    } catch {
+        // Report the actionable input error below.
+    }
+
+    throw new Error(`Unable to auto-detect '${input}' from the checked-out repository. Provide the '${input}' input.`);
+}
+
+/**
  * Escapes certain characters in a package URL (purl) to work around issues with some tools not escaping namespaces correctly.
  * Specifically, it replaces "@" with "%40" and "^" with "%5E". If an "@" is already present in the purl, it assumes no further action is needed.
  * If a "%40" is present in the purl without an "@", it converts the last occurrence of "%40" back to "@".
@@ -52415,6 +52458,7 @@ const index_VERSION = "0.3.0";
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
+  const submissionContext = getSubmissionContext(github_context);
 
   const correlator = getInput('correlator');
   let snapshot = new l({
@@ -52422,7 +52466,7 @@ async function run() {
     version: index_VERSION,
     url: "https://github.com/advanced-security/spdx-dependency-submission-action",
   },
-    github_context,
+    submissionContext,
     {
       correlator: correlator,
       id: github_context.runId.toString()
@@ -52432,7 +52476,7 @@ async function run() {
     snapshot.addManifest(manifest);
   });
 
-  L(snapshot);
+  L(snapshot, submissionContext);
 }
 
 run();

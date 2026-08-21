@@ -40,6 +40,23 @@ jobs:
         filePath: "_manifest/spdx_2.2/"
 ```
 
+## Submit to another repository
+
+Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository in the working directory.
+
+```yaml
+    - name: SBOM upload
+      uses: advanced-security/spdx-dependency-submission-action@v0
+      with:
+        filePath: "target-repo.spdx.json"
+        token: ${{ secrets.TARGET_REPOSITORY_TOKEN }}
+        owner: my-org
+        repo: target-repo
+        repoRef: refs/heads/main
+```
+
+The token must have permission to submit dependency snapshots to the target repository.
+
 Add support for running inside a matrix by overriding the default correlater unique identifier to include the job+matrix values.  Consider these sample steps:
 
 ```yaml
