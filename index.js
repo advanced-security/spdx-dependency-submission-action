@@ -4,7 +4,7 @@ import { context } from '@actions/github';
 import * as toolkit from '@github/dependency-submission-toolkit';
 import * as lib from './lib/index.js';
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
 async function run() {
   let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
