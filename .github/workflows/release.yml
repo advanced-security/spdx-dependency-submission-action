@@ -70,8 +70,10 @@ jobs:
 
       # package-lock.json's own "version" fields aren't patched above; npm ci fails if they
       # drift from package.json, so resync the lockfile without touching resolved dependencies.
+      # --ignore-scripts: package-lock-only doesn't install devDependencies, so the "prepare"
+      # script (ncc build) would fail with "ncc: not found" if lifecycle scripts ran here.
       - name: Sync package-lock.json
-        run: npm install --package-lock-only
+        run: npm install --package-lock-only --ignore-scripts
 
       - name: Create Release PR
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
