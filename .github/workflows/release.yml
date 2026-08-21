@@ -1,0 +1,154 @@
+# GitHub Releasing Workflow
+#
+# Delegates the tag/release mechanics to the shared reusable workflow in
+# advanced-security/reusable-workflows: https://github.com/advanced-security/reusable-workflows
+#
+# Two ways to cut a release:
+#
+#   1. Normal flow - run this workflow (workflow_dispatch) with a "bump" type (patch/minor/major).
+#      This opens a PR that bumps the version in .release.yml, and every location it tracks
+#      (package.json, index.js, README.md), using 42ByteLabs/patch-release-me. Merging that PR to
+#      main triggers the "fetch-release" + "release" jobs below, which create the GitHub Release
+#      and update the floating v<major>/v<major>.<minor> tags.
+#   2. Ad hoc flow - run this workflow (workflow_dispatch) with an explicit "version" (optionally
+#      "prerelease: true") to cut a release immediately, bypassing the bump-PR step. Useful for
+#      prereleases or hotfixes.
+name: Release
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".release.yml"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Bump type - opens a PR bumping .release.yml. Ignored if 'version' is set."
+        type: choice
+        options:
+          - none
+          - patch
+          - minor
+          - major
+        default: none
+      version:
+        description: "Explicit version to release now (e.g. 0.3.0 or 0.3.0-beta.1). Takes priority over 'bump'."
+        type: string
+        default: ""
+      prerelease:
+        description: "Publish as a pre-release (only used with 'version')"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  # workflow_dispatch + bump: open a PR bumping .release.yml and every location it tracks
+  bump-version:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.version == '' && inputs.bump != 'none' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Patch Release Me
+        uses: 42ByteLabs/patch-release-me@04ea0a696abfc3cfbdfadb279bd9c9dd0b1652a2 # 0.6.6
+        with:
+          mode: ${{ inputs.bump }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: latest
+
+      # package-lock.json's own "version" fields aren't patched above; npm ci fails if they
+      # drift from package.json, so resync the lockfile without touching resolved dependencies.
+      - name: Sync package-lock.json
+        run: npm install --package-lock-only
+
+      - name: Create Release PR
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ github.token }}
+          commit-message: "chore: bump version (${{ inputs.bump }})"
+          title: "chore: bump version (${{ inputs.bump }})"
+          branch: chore/release-${{ inputs.bump }}
+          labels: version
+          body: |
+            Automated PR to bump the version tracked in `.release.yml`, and every location it
+            patches (`package.json`, `index.js`, `README.md`), plus a resynced `package-lock.json`.
+
+            Merging this to `main` automatically publishes a GitHub Release for the new version.
+
+  # workflow_dispatch + version: cut a release immediately (prereleases, hotfixes), skipping the PR step.
+  # Note: unlike "bump-version", this does NOT update .release.yml/package.json/index.js. For a full
+  # (non-prerelease) ad hoc release, follow up with a "bump" run (or manual edit) to keep them in sync.
+  manual-release:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' }}
+    uses: advanced-security/reusable-workflows/.github/workflows/release.yml@v0.3.5
+    secrets: inherit
+    with:
+      version: ${{ inputs.version }}
+      prerelease: ${{ inputs.prerelease }}
+
+  # push to main: release automatically once .release.yml's version no longer matches the latest release
+  fetch-release:
+    if: ${{ github.event_name == 'push' && !github.event.repository.fork }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check .release.yml version against latest release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          current_version=$(grep -m1 -E '^version:' .release.yml | sed -n -E 's/^version:[[:space:]]*"?([0-9]+\.[0-9]+\.[0-9]+)"?.*/\1/p')
+          if [ -z "$current_version" ]; then
+            echo "::error::Could not read a version from .release.yml"
+            exit 1
+          fi
+
+          # A real 404 means "no releases yet" (e.g. brand-new repo) and is expected. Any other
+          # gh api failure (auth, rate-limit, network) must not be silently treated as "no release
+          # found" - that would let a transient error trigger an unintended release.
+          released_version=""
+          if latest_tag=$(gh api "/repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name' 2>/tmp/gh-api-err.log); then
+            released_version="${latest_tag#v}"
+          elif ! grep -q "HTTP 404" /tmp/gh-api-err.log; then
+            echo "::error::Failed to look up the latest release:"
+            cat /tmp/gh-api-err.log
+            exit 1
+          fi
+
+          echo "Current .release.yml version: $current_version"
+          echo "Latest GitHub release:        ${released_version:-<none>}"
+
+          if [ "$current_version" = "$released_version" ]; then
+            echo "No new release needed - versions match"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Release v$current_version will be created."
+            echo "version=$current_version" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: [fetch-release]
+    if: ${{ needs.fetch-release.outputs.release == 'true' }}
+    uses: advanced-security/reusable-workflows/.github/workflows/release.yml@v0.3.5
+    secrets: inherit
+    with:
+      version: ${{ needs.fetch-release.outputs.version }}
