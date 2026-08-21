@@ -8197,34 +8197,7 @@ function removeHook(state, name, method) {
 
 /***/ }),
 
-/***/ 4150:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-class Deprecation extends Error {
-  constructor(message) {
-    super(message); // Maintains proper stack trace (only available on V8)
-
-    /* istanbul ignore next */
-
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-
-    this.name = 'Deprecation';
-  }
-
-}
-
-exports.Deprecation = Deprecation;
-
-
-/***/ }),
-
-/***/ 8497:
+/***/ 4691:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 var balanced = __nccwpck_require__(9380);
@@ -8236,6 +8209,20 @@ var escOpen = '\0OPEN'+Math.random()+'\0';
 var escClose = '\0CLOSE'+Math.random()+'\0';
 var escComma = '\0COMMA'+Math.random()+'\0';
 var escPeriod = '\0PERIOD'+Math.random()+'\0';
+
+var EXPANSION_MAX = 100000
+
+// `EXPANSION_MAX` caps the *number* of expansions, but not their length. An
+// input like `'{a,b}'.repeat(1500)` stays under that count - its output is
+// truncated to 100k results - while making every result ~1500 characters
+// long. The result set, and the intermediate arrays built while combining
+// brace sets, then grow large enough to exhaust memory and crash the process
+// (CVE-2026-14257). `EXPANSION_MAX_LENGTH` bounds the total number of
+// characters the accumulator may hold at any point, so memory stays flat no
+// matter how many brace groups are chained. The limit sits well above any
+// realistic expansion (100k results hitting `EXPANSION_MAX` measure ~1M
+// characters) so legitimate input is unaffected.
+var EXPANSION_MAX_LENGTH = 4000000
 
 function numeric(str) {
   return parseInt(str, 10) == str
@@ -8290,9 +8277,13 @@ function parseCommaParts(str) {
   return parts;
 }
 
-function expandTop(str) {
+function expandTop(str, options) {
   if (!str)
     return [];
+
+  options = options || {};
+  var max = options.max == null ? EXPANSION_MAX : options.max;
+  var maxLength = options.maxLength == null ? EXPANSION_MAX_LENGTH : options.maxLength;
 
   // I don't know why Bash 4.3 does this, but it does.
   // Anything starting with {} will have the first two bytes preserved
@@ -8304,7 +8295,7 @@ function expandTop(str) {
     str = '\\{\\}' + str.substr(2);
   }
 
-  return expand(escapeBraces(str), true).map(unescapeBraces);
+  return expand(escapeBraces(str), max, maxLength, true).map(unescapeBraces);
 }
 
 function embrace(str) {
@@ -8321,24 +8312,144 @@ function gte(i, y) {
   return i >= y;
 }
 
-function expand(str, isTop) {
-  var expansions = [];
-
-  var m = balanced('{', '}', str);
-  if (!m) return [str];
-
-  // no need to expand pre, since it is guaranteed to be free of brace-sets
-  var pre = m.pre;
-  var post = m.post.length
-    ? expand(m.post, false)
-    : [''];
-
-  if (/\$$/.test(m.pre)) {    
-    for (var k = 0; k < post.length; k++) {
-      var expansion = pre+ '{' + m.body + '}' + post[k];
-      expansions.push(expansion);
+// Build `{ acc[a] + pre + values[v] }` for every combination, capping the
+// number of results at `max` and the total number of characters at `maxLength`.
+// This is the one place output grows, so bounding it here keeps the single
+// accumulator - and therefore memory - flat regardless of how many brace groups
+// are combined (CVE-2026-14257).
+function combine(
+  acc,
+  pre,
+  values,
+  max,
+  maxLength,
+  dropEmpties
+) {
+  var out = []
+  var length = 0
+  for (var a = 0; a < acc.length; a++) {
+    for (var v = 0; v < values.length; v++) {
+      if (out.length >= max) return out
+      var expansion = acc[a] + pre + values[v]
+      // Bash drops empty results at the top level. Skip them before they count
+      // against `max`, so `max` bounds the number of *kept* results.
+      if (dropEmpties && !expansion) continue
+      if (length + expansion.length > maxLength) return out
+      out.push(expansion)
+      length += expansion.length
     }
-  } else {
+  }
+  return out
+}
+
+// The expansion values of a single numeric (`1..5`) or alphabetic (`a..e..2`)
+// sequence body.
+function expandSequence(
+  body,
+  isAlphaSequence,
+  max,
+  maxLength
+) {
+  var n = body.split(/\.\./)
+  var N = []
+  // A sequence body always splits into two or three parts, but the compiler
+  // can't know that.
+  /* c8 ignore start */
+  if (n[0] === undefined || n[1] === undefined) {
+    return N
+  }
+  /* c8 ignore stop */
+  var x = numeric(n[0])
+  var y = numeric(n[1])
+  var width = Math.max(n[0].length, n[1].length)
+  var incr =
+    n.length === 3 && n[2] !== undefined ?
+      Math.max(Math.abs(numeric(n[2])), 1)
+    : 1
+  var test = lte
+  var reverse = y < x
+  if (reverse) {
+    incr *= -1
+    test = gte
+  }
+  var pad = n.some(isPadded)
+
+  var length = 0
+  for (var i = x; test(i, y) && N.length < max; i += incr) {
+    var c
+    if (isAlphaSequence) {
+      c = String.fromCharCode(i)
+      if (c === '\\') {
+        c = ''
+      }
+    } else {
+      c = String(i)
+      if (pad) {
+        var need = width - c.length
+        if (need > 0) {
+          var z = new Array(need + 1).join('0')
+          if (i < 0) {
+            c = '-' + z + c.slice(1)
+          } else {
+            c = z + c
+          }
+        }
+      }
+    }
+    if (length + c.length > maxLength) break
+    N.push(c)
+    length += c.length
+  }
+  return N
+}
+
+function expand(
+  str,
+  max,
+  maxLength,
+  isTop
+) {
+  // Consume the string's top-level brace groups left to right, threading a
+  // running set of combined prefixes (`acc`). Expanding the tail iteratively -
+  // rather than recursing on `m.post` once per group - keeps the native stack
+  // depth constant, so deeply chained input (`'{a,b}'.repeat(3000)`) can no
+  // longer overflow the stack, and leaves a single accumulator whose size
+  // `maxLength` bounds directly (CVE-2026-14257).
+  var acc = ['']
+
+  // Bash drops empty results, but only when the *first* top-level group is a
+  // comma set - a sequence like `{a..\}` may legitimately yield ''. The drop
+  // is on the final strings, so it is applied to whichever `combine` produces
+  // them (the one with no brace set left in the tail).
+  var dropEmpties = false
+  var firstGroup = true
+
+  for (;;) {
+    const m = balanced('{', '}', str)
+
+    // No brace set left: the rest of the string is literal.
+    if (!m) {
+      return combine(acc, str, [''], max, maxLength, dropEmpties)
+    }
+
+    // no need to expand pre, since it is guaranteed to be free of brace-sets
+    const pre = m.pre
+
+    if (/\$$/.test(pre)) {
+      acc = combine(
+        acc,
+        pre + '{' + m.body + '}',
+        [''],
+        max,
+        maxLength,
+        dropEmpties && !m.post.length
+      )
+      firstGroup = false
+      if (!m.post.length) break
+      str = m.post
+      continue
+    }
+
     var isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m.body);
     var isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m.body);
     var isSequence = isNumericSequence || isAlphaSequence;
@@ -8347,88 +8458,113 @@ function expand(str, isTop) {
       // {a},b}
       if (m.post.match(/,(?!,).*\}/)) {
         str = m.pre + '{' + m.body + escClose + m.post;
-        return expand(str);
+        isTop = true;
+        continue;
       }
-      return [str];
+      // Nothing here expands, so the whole remaining string is literal.
+      return combine(
+        acc,
+        pre + '{' + m.body + '}' + m.post,
+        [''],
+        max,
+        maxLength,
+        dropEmpties
+      )
     }
 
-    var n;
+    if (firstGroup) {
+      dropEmpties = isTop && !isSequence
+      firstGroup = false
+    }
+
+    var values;
     if (isSequence) {
-      n = m.body.split(/\.\./);
+      values = expandSequence(m.body, isAlphaSequence, max, maxLength);
     } else {
-      n = parseCommaParts(m.body);
-      if (n.length === 1) {
+      var n = parseCommaParts(m.body);
+      if (n.length === 1 && n[0] !== undefined) {
         // x{{a,b}}y ==> x{a}y x{b}y
-        n = expand(n[0], false).map(embrace);
+        n = expand(n[0], max, maxLength, false).map(embrace);
+        //XXX is this necessary? Can't seem to hit it in tests.
+        /* c8 ignore start */
         if (n.length === 1) {
-          return post.map(function(p) {
-            return m.pre + n[0] + p;
-          });
+          acc = combine(
+            acc,
+            pre + n[0],
+            [''],
+            max,
+            maxLength,
+            dropEmpties && !m.post.length
+          )
+          if (!m.post.length) break
+          str = m.post
+          continue
+        }
+        /* c8 ignore stop */
+      }
+
+      // Values that `combine` is going to drop as empty produce no result, so
+      // they must not count against `max` - otherwise `{a,,b}` with `max: 2`
+      // would stop at `['a', '']` and yield one result instead of two. Skipping
+      // them outright keeps `values` bounded while leaving `max` a bound on
+      // *kept* results.
+      var dropsEmpties = dropEmpties && !m.post.length && !pre
+      for (var d = 0; dropsEmpties && d < acc.length; d++) {
+        if (acc[d]) {
+          dropsEmpties = false
         }
       }
-    }
 
-    // at this point, n is the parts, and we know it's not a comma set
-    // with a single entry.
-    var N;
-
-    if (isSequence) {
-      var x = numeric(n[0]);
-      var y = numeric(n[1]);
-      var width = Math.max(n[0].length, n[1].length)
-      var incr = n.length == 3
-        ? Math.max(Math.abs(numeric(n[2])), 1)
-        : 1;
-      var test = lte;
-      var reverse = y < x;
-      if (reverse) {
-        incr *= -1;
-        test = gte;
-      }
-      var pad = n.some(isPadded);
-
-      N = [];
-
-      for (var i = x; test(i, y); i += incr) {
-        var c;
-        if (isAlphaSequence) {
-          c = String.fromCharCode(i);
-          if (c === '\\')
-            c = '';
-        } else {
-          c = String(i);
-          if (pad) {
-            var need = width - c.length;
-            if (need > 0) {
-              var z = new Array(need + 1).join('0');
-              if (i < 0)
-                c = '-' + z + c.slice(1);
-              else
-                c = z + c;
-            }
+      values = []
+      var valuesLength = 0
+      outer: for (var j = 0; j < n.length; j++) {
+        var expanded = expand(n[j], max, maxLength, false)
+        for (var k = 0; k < expanded.length; k++) {
+          var v = expanded[k]
+          if (dropsEmpties && !v) continue
+          if (values.length >= max || valuesLength + v.length > maxLength) {
+            break outer
           }
+          values.push(v)
+          valuesLength += v.length
         }
-        N.push(c);
-      }
-    } else {
-      N = [];
-
-      for (var j = 0; j < n.length; j++) {
-        N.push.apply(N, expand(n[j], false));
       }
     }
 
-    for (var j = 0; j < N.length; j++) {
-      for (var k = 0; k < post.length; k++) {
-        var expansion = pre + N[j] + post[k];
-        if (!isTop || isSequence || expansion)
-          expansions.push(expansion);
-      }
-    }
+    acc = combine(acc, pre, values, max, maxLength, dropEmpties && !m.post.length)
+    if (!m.post.length) break
+    str = m.post
   }
 
-  return expansions;
+  return acc
 }
+
+
+/***/ }),
+
+/***/ 4150:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+class Deprecation extends Error {
+  constructor(message) {
+    super(message); // Maintains proper stack trace (only available on V8)
+
+    /* istanbul ignore next */
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+
+    this.name = 'Deprecation';
+  }
+
+}
+
+exports.Deprecation = Deprecation;
 
 
 /***/ }),
@@ -37134,6 +37270,9 @@ __webpack_unused_export__ = defaultContentType
 /******/ }
 /******/ 
 /************************************************************************/
+/******/ /* webpack/runtime/asset-relocator-loader */
+/******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = decodeURIComponent(new URL('.', import.meta.url).pathname).slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
+/******/ 
 /******/ /* webpack/runtime/create fake namespace object */
 /******/ (() => {
 /******/ 	var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
@@ -37191,10 +37330,6 @@ __webpack_unused_export__ = defaultContentType
 /******/ 		Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 	};
 /******/ })();
-/******/ 
-/******/ /* webpack/runtime/compat */
-/******/ 
-/******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
 /******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
@@ -44273,9 +44408,9 @@ class dist_src_RequestError extends Error {
 var o=class{depPackage;relationship;scope;constructor(e,t,s){this.depPackage=e,t!==void 0&&(this.relationship=t),s!==void 0&&(this.scope=s);}toJSON(){return {package_url:this.depPackage.packageURL.toString(),relationship:this.relationship,scope:this.scope,dependencies:this.depPackage.packageDependencyIDs}}},g=class{resolved;name;file;constructor(e,t){this.resolved={},this.name=e,t&&(this.file={source_location:t});}addDirectDependency(e,t){this.resolved[e.packageID()]=new o(e,"direct",t);}addIndirectDependency(e,t){this.resolved[e.packageID()]??=new o(e,"indirect",t);}hasDependency(e){return this.lookupDependency(e)!==void 0}lookupDependency(e){return this.resolved[e.packageID()]}countDependencies(){return Object.keys(this.resolved).length}filterDependencies(e){return Object.values(this.resolved).reduce((t,s)=>(e(s)&&t.push(s.depPackage),t),[])}directDependencies(){return this.filterDependencies(e=>e.relationship==="direct")}indirectDependencies(){return this.filterDependencies(e=>e.relationship==="indirect")}},u=class extends (/* unused pure expression or super */ null && (g)){addBuildDependency(e){this.addDirectDependency(e,"runtime");for(let t of e.dependencies)this.addIndirectDependency(t,"runtime");}};var c=class{packageURL;dependencies;constructor(e){typeof e=="string"?this.packageURL=packageurl_js.PackageURL.fromString(e):this.packageURL=e,this.dependencies=[];}dependsOn(e){return this.dependencies.push(e),this}dependsOnPackages(e){for(let t of e)this.dependsOn(t);return this}get packageDependencyIDs(){return this.dependencies.map(e=>e.packageID())}packageID(){return this.packageURL.toString()}namespace(){return this.packageURL.namespace??null}name(){return this.packageURL.name}version(){return this.packageURL.version||""}matching(e){return (e.namespace===void 0||this.packageURL.namespace===e.namespace)&&(e.name===void 0||this.packageURL.name===e.name)&&(e.version===void 0||this.packageURL.version===e.version)}};var h=class{database;constructor(){this.database={};}package(e){let t=this.lookupPackage(e);if(t)return t;let s=new c(e);return this.addPackage(s),s}packagesMatching(e){return Object.values(this.database).filter(t=>t.matching(e))}addPackage(e){this.database[e.packageURL.toString()]=e;}removePackage(e){delete this.database[e.packageURL.toString()];}lookupPackage(e){if(typeof e=="string"){let t=PackageURL.fromString(e);return this.database[t.toString()]}return this.database[e.toString()]}hasPackage(e){return this.lookupPackage(e)!==void 0}countPackages(){return Object.values(this.database).length}};function y(r){return {correlator:r.job,id:r.runId.toString()}}function P(r){return ["pull_request","pull_request_comment","pull_request_review","pull_request_review_comment"].includes(r.eventName)?r.payload.pull_request.head.sha:r.sha}var l=class{manifests;version;job;sha;ref;scanned;detector;constructor(e,t=github.context,s,p=new Date,n=0){this.detector=e,this.version=n,this.job=s||y(t),this.sha=P(t),this.ref=t.ref,this.scanned=p.toISOString(),this.manifests={};}addManifest(e){this.manifests[e.name]=e;}prettyJSON(){return JSON.stringify(this,void 0,4)}};async function L(r,e=github.context){core.setOutput("snapshot",JSON.stringify(r)),core.notice("Submitting snapshot..."),core.notice(r.prettyJSON());let t=e.repo,s=core.getInput("token")||await core.getIDToken(),p=github.getOctokit(s);try{let n=await p.request("POST /repos/{owner}/{repo}/dependency-graph/snapshots",{headers:{accept:"application/vnd.github.foo-bar-preview+json"},owner:t.owner,repo:t.repo,...r}),d=n.data.result;d==="SUCCESS"||d==="ACCEPTED"?core.notice(`Snapshot successfully created at ${n.data.created_at.toString()}`):core.error(`Snapshot creation failed with result: "${d}: ${n.data.message}"`);}catch(n){throw n instanceof dist_src_RequestError&&(core.error(`HTTP Status ${n.status} for request ${n.request.method} ${n.request.url}`),n.response&&core.error(`Response body:
 ${JSON.stringify(n.response.data,void 0,2)}`)),n instanceof Error&&(core.error(n.message),n.stack&&core.error(n.stack)),new Error(`Failed to submit snapshot: ${n}`)}}//# sourceMappingURL=index.js.map
 //# sourceMappingURL=index.js.map
-// EXTERNAL MODULE: ./node_modules/glob/node_modules/brace-expansion/index.js
-var brace_expansion = __nccwpck_require__(8497);
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/assert-valid-pattern.js
+// EXTERNAL MODULE: ./node_modules/brace-expansion/index.js
+var brace_expansion = __nccwpck_require__(4691);
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/esm/assert-valid-pattern.js
 const MAX_PATTERN_LENGTH = 1024 * 64;
 const assertValidPattern = (pattern) => {
     if (typeof pattern !== 'string') {
@@ -44286,7 +44421,7 @@ const assertValidPattern = (pattern) => {
     }
 };
 //# sourceMappingURL=assert-valid-pattern.js.map
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/brace-expressions.js
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/esm/brace-expressions.js
 // translate the various posix character classes into unicode properties
 // this works across all unicode locales
 // { <posix class>: [<translation>, /u flag required, negated]
@@ -44435,7 +44570,7 @@ const parseClass = (glob, position) => {
     return [comb, uflag, endPos - pos, true];
 };
 //# sourceMappingURL=brace-expressions.js.map
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/unescape.js
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/esm/unescape.js
 /**
  * Un-escape a string that has been escaped with {@link escape}.
  *
@@ -44456,7 +44591,7 @@ const unescape_unescape = (s, { windowsPathsNoEscape = false, } = {}) => {
         : s.replace(/((?!\\).|^)\[([^\/\\])\]/g, '$1$2').replace(/\\([^\/])/g, '$1');
 };
 //# sourceMappingURL=unescape.js.map
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/ast.js
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/esm/ast.js
 // parse a single path portion
 var _a;
 
@@ -45200,7 +45335,7 @@ class AST {
 }
 _a = AST;
 //# sourceMappingURL=ast.js.map
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/escape.js
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/esm/escape.js
 /**
  * Escape all magic characters in a glob pattern.
  *
@@ -45219,7 +45354,7 @@ const escape_escape = (s, { windowsPathsNoEscape = false, } = {}) => {
         : s.replace(/[?*()[\]\\]/g, '\\$&');
 };
 //# sourceMappingURL=escape.js.map
-;// CONCATENATED MODULE: ./node_modules/glob/node_modules/minimatch/dist/esm/index.js
+;// CONCATENATED MODULE: ./node_modules/minimatch/dist/esm/index.js
 
 
 
@@ -47908,7 +48043,7 @@ class PipeProxyErrors extends Pipe {
     }
     constructor(src, dest, opts) {
         super(src, dest, opts);
-        this.proxyErrors = er => dest.emit('error', er);
+        this.proxyErrors = (er) => this.dest.emit('error', er);
         src.on('error', this.proxyErrors);
     }
 }
@@ -48718,6 +48853,7 @@ class Minipass extends external_node_events_.EventEmitter {
             [Symbol.asyncIterator]() {
                 return this;
             },
+            [Symbol.asyncDispose]: async () => { },
         };
     }
     /**
@@ -48755,6 +48891,7 @@ class Minipass extends external_node_events_.EventEmitter {
             [Symbol.iterator]() {
                 return this;
             },
+            [Symbol.dispose]: () => { },
         };
     }
     /**
