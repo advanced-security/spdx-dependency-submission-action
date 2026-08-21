@@ -52402,8 +52402,8 @@ function replaceVersionEscape(purl) {
     // packageurl-js expects colons in a version to be unescaped.
     let versionStart = purl.indexOf("@");
     if (versionStart >= 0) {
-        let versionEnd = purl.slice(versionStart).search(/[?#]/);
-        versionEnd = versionEnd < 0 ? purl.length : versionStart + versionEnd;
+        let versionEnd = purl.slice(versionStart + 1).search(/[?#]/);
+        versionEnd = versionEnd < 0 ? purl.length : versionStart + 1 + versionEnd;
         purl = purl.slice(0, versionStart + 1)
             + purl.slice(versionStart + 1, versionEnd).replaceAll(/%3A/gi, ":")
             + purl.slice(versionEnd);
