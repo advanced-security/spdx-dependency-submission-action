@@ -52510,7 +52510,7 @@ const index_VERSION = "0.3.0";
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
-  const submissionContext = getSubmissionContext(github_context, getInput('repoPath') || getInput('filePath'));
+  const submissionContext = getSubmissionContext(github_context, getInput('repoPath') || process.cwd());
 
   const correlator = getInput('correlator');
   let snapshot = new l({

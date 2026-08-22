@@ -20,7 +20,6 @@ const Snapshot = jest.fn(() => snapshot);
 const submitSnapshot = jest.fn();
 const getInput = jest.fn(name => ({
   correlator: "test-correlator",
-  filePath: "target-repo/_manifest/spdx_2.2",
   repoPath: "target-repo"
 })[name] ?? "");
 const getSubmissionContext = jest.fn(() => submissionContext);

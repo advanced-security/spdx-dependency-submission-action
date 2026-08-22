@@ -42,7 +42,7 @@ jobs:
 
 ## Submit to another repository
 
-Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository at `repoPath`. `repoPath` defaults to `filePath`.
+Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository at `repoPath`. Set `repoPath` when the target repository is checked out somewhere other than the Actions working directory.
 Provide `repoRef` explicitly when the target repository is checked out at a detached HEAD.
 This example assumes `target_sha` is provided as a workflow input.
 
@@ -69,7 +69,7 @@ The token must have permission to submit dependency snapshots to the target repo
 Add support for running inside a matrix by overriding the default correlator unique identifier to include the job+matrix values.  Consider these sample steps:
 
 ```yaml
-      # Format corrleator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
+      # Format correlator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
       - name: Define correlator
         id: matrix_parser
         run: |
