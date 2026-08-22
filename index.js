@@ -8,7 +8,7 @@ const VERSION = "0.3.0";
 
 async function run() {
   let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
-  const submissionContext = lib.getSubmissionContext(context);
+  const submissionContext = lib.getSubmissionContext(context, core.getInput('filePath'));
 
   const correlator = core.getInput('correlator');
   let snapshot = new toolkit.Snapshot({

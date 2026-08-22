@@ -18,9 +18,14 @@ const snapshot = {
 };
 const Snapshot = jest.fn(() => snapshot);
 const submitSnapshot = jest.fn();
+const getInput = jest.fn(name => ({
+  correlator: "test-correlator",
+  filePath: "target-repo"
+})[name] ?? "");
+const getSubmissionContext = jest.fn(() => submissionContext);
 
 jest.unstable_mockModule('@actions/core', () => ({
-  getInput: jest.fn(() => "test-correlator")
+  getInput
 }));
 jest.unstable_mockModule('@actions/github', () => ({
   context: workflowContext
@@ -31,7 +36,7 @@ jest.unstable_mockModule('@github/dependency-submission-toolkit', () => ({
 }));
 jest.unstable_mockModule('./lib/index.js', () => ({
   getManifestsFromSpdxFiles: jest.fn(() => []),
-  getSubmissionContext: jest.fn(() => submissionContext),
+  getSubmissionContext,
   searchFiles: jest.fn(() => [])
 }));
 
@@ -48,5 +53,6 @@ test("uses the submission context for snapshot metadata and API routing", () => 
       id: "123"
     }
   );
+  expect(getSubmissionContext).toHaveBeenCalledWith(workflowContext, "target-repo");
   expect(submitSnapshot).toHaveBeenCalledWith(snapshot, submissionContext);
 });

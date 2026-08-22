@@ -42,18 +42,24 @@ jobs:
 
 ## Submit to another repository
 
-Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository in the working directory.
-Provide both values explicitly when the target repository is checked out in another directory or at a detached HEAD.
+Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository containing `filePath`.
+Provide `repoRef` explicitly when the target repository is checked out at a detached HEAD.
+This example assumes `target_sha` is provided as a workflow input.
 
 ```yaml
+    - uses: actions/checkout@v4
+      with:
+        repository: my-org/target-repo
+        path: target-repo
     - name: SBOM upload
       uses: advanced-security/spdx-dependency-submission-action@v0
       with:
-        filePath: "."
-        filePattern: "target-repo.spdx.json"
+        filePath: target-repo
+        filePattern: target-repo.spdx.json
         token: ${{ secrets.TARGET_REPOSITORY_TOKEN }}
         owner: my-org
         repo: target-repo
+        repoSha: ${{ github.event.inputs.target_sha }}
         repoRef: refs/heads/main
 ```
 

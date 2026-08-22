@@ -52411,7 +52411,7 @@ function getSubmissionContext(defaultContext, workingDirectory = process.cwd()) 
             repo
         },
         sha: repoSha || getGitValue(['rev-parse', 'HEAD'], 'repoSha', workingDirectory),
-        ref: repoRef || getGitValue(['symbolic-ref', 'HEAD'], 'repoRef', workingDirectory)
+        ref: repoRef || getGitRef(workingDirectory)
     };
 }
 
@@ -52436,6 +52436,29 @@ function isRepositoryCheckout(owner, repo, workingDirectory) {
     }
 }
 
+function getGitRef(workingDirectory) {
+    try {
+        const value = runGit(['symbolic-ref', 'HEAD'], workingDirectory);
+        if (value) {
+            return value;
+        }
+    } catch {
+        if (isDetachedHead(workingDirectory)) {
+            throw new Error("Unable to auto-detect 'repoRef' from a detached HEAD. Provide the 'repoRef' input.");
+        }
+    }
+
+    throw new Error("Unable to auto-detect 'repoRef' from the checked-out repository. Provide the 'repoRef' input.");
+}
+
+function isDetachedHead(workingDirectory) {
+    try {
+        return runGit(['rev-parse', '--abbrev-ref', 'HEAD'], workingDirectory) === 'HEAD';
+    } catch {
+        return false;
+    }
+}
+
 function getGitValue(args, input, workingDirectory) {
     try {
         const value = runGit(args, workingDirectory);
@@ -52446,8 +52469,7 @@ function getGitValue(args, input, workingDirectory) {
         // Report the actionable input error below.
     }
 
-    const detachedHeadHint = input === 'repoRef' ? ' The repository may have a detached HEAD.' : '';
-    throw new Error(`Unable to auto-detect '${input}' from the checked-out repository.${detachedHeadHint} Provide the '${input}' input.`);
+    throw new Error(`Unable to auto-detect '${input}' from the checked-out repository. Provide the '${input}' input.`);
 }
 
 /**
@@ -52488,7 +52510,7 @@ const index_VERSION = "0.3.0";
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
-  const submissionContext = getSubmissionContext(github_context);
+  const submissionContext = getSubmissionContext(github_context, getInput('filePath'));
 
   const correlator = getInput('correlator');
   let snapshot = new l({
