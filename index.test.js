@@ -31,13 +31,13 @@ jest.unstable_mockModule('@actions/github', () => ({
   context: workflowContext
 }));
 jest.unstable_mockModule('@github/dependency-submission-toolkit', () => ({
-  Snapshot,
-  submitSnapshot
+  Snapshot
 }));
 jest.unstable_mockModule('./lib/index.js', () => ({
   getManifestsFromSpdxFiles: jest.fn(() => []),
   getSubmissionContext,
-  searchFiles: jest.fn(() => [])
+  searchFiles: jest.fn(() => []),
+  submitSnapshot
 }));
 
 beforeAll(async () => {
