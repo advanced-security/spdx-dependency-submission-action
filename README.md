@@ -47,6 +47,7 @@ Set `repo` to submit the snapshot to a repository other than the one running the
 Provide `repoRef` explicitly when the target repository is checked out at a detached HEAD.
 
 This example assumes `target_sha` is provided as a workflow input.
+For a branch checkout at `repoPath`, `repoSha` and `repoRef` can be omitted and auto-detected.
 
 ```yaml
     - uses: actions/checkout@v4

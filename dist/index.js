@@ -52400,7 +52400,7 @@ function getSubmissionContext(defaultContext, workingDirectory = process.cwd()) 
             !repoSha && "'repoSha'",
             !repoRef && "'repoRef'"
         ].filter(Boolean).join(' and ');
-        throw new Error(`Unable to auto-detect ${missingInputs} because the repoPath directory is not a checkout of '${owner}/${repo}'. Provide ${missingInputs} explicitly.`);
+        throw new Error(`The repoPath directory is not a checkout of '${owner}/${repo}'. Provide ${missingInputs} explicitly or set 'repoPath' to the target checkout.`);
     }
 
     return {
