@@ -52408,7 +52408,8 @@ function getGitValue(args, input, workingDirectory) {
     try {
         const value = (0,external_child_process_.execFileSync)('git', args, {
             cwd: workingDirectory,
-            encoding: 'utf8'
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe']
         }).trim();
         if (value) {
             return value;
@@ -52417,7 +52418,8 @@ function getGitValue(args, input, workingDirectory) {
         // Report the actionable input error below.
     }
 
-    throw new Error(`Unable to auto-detect '${input}' from the checked-out repository. Provide the '${input}' input.`);
+    const detachedHeadHint = input === 'repoRef' ? ' The repository may have a detached HEAD.' : '';
+    throw new Error(`Unable to auto-detect '${input}' from the checked-out repository.${detachedHeadHint} Provide the '${input}' input.`);
 }
 
 /**
