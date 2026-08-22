@@ -8,6 +8,7 @@ const VERSION = "0.3.0";
 
 async function run() {
   let manifests = lib.getManifestsFromSpdxFiles(lib.searchFiles());
+  const submissionContext = lib.getSubmissionContext(context, core.getInput('repoPath') || process.cwd());
 
   const correlator = core.getInput('correlator');
   let snapshot = new toolkit.Snapshot({
@@ -15,7 +16,7 @@ async function run() {
     version: VERSION,
     url: "https://github.com/advanced-security/spdx-dependency-submission-action",
   },
-    context,
+    submissionContext,
     {
       correlator: correlator,
       id: context.runId.toString()
@@ -25,7 +26,7 @@ async function run() {
     snapshot.addManifest(manifest);
   });
 
-  toolkit.submitSnapshot(snapshot);
+  await lib.submitSnapshot(snapshot, submissionContext);
 }
 
 run();
