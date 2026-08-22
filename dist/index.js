@@ -55430,7 +55430,7 @@ async function submitSnapshot(snapshot, context) {
 
 
 
-const index_VERSION = "0.3.0";
+const index_VERSION = "0.3.1";
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
