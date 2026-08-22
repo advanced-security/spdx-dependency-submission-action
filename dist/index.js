@@ -52392,25 +52392,53 @@ function getSubmissionContext(defaultContext, workingDirectory = process.cwd()) 
         return defaultContext;
     }
 
+    const owner = getInput('owner') || defaultContext.repo.owner;
+    const repoSha = getInput('repoSha');
+    const repoRef = getInput('repoRef');
+    if ((!repoSha || !repoRef) && !isRepositoryCheckout(owner, repo, workingDirectory)) {
+        const missingInputs = [
+            !repoSha && "'repoSha'",
+            !repoRef && "'repoRef'"
+        ].filter(Boolean).join(' and ');
+        throw new Error(`Unable to auto-detect ${missingInputs} because the working directory is not a checkout of '${owner}/${repo}'. Provide ${missingInputs} explicitly.`);
+    }
+
     return {
         ...defaultContext,
         eventName: '',
         repo: {
-            owner: getInput('owner') || defaultContext.repo.owner,
+            owner,
             repo
         },
-        sha: getInput('repoSha') || getGitValue(['rev-parse', 'HEAD'], 'repoSha', workingDirectory),
-        ref: getInput('repoRef') || getGitValue(['symbolic-ref', 'HEAD'], 'repoRef', workingDirectory)
+        sha: repoSha || getGitValue(['rev-parse', 'HEAD'], 'repoSha', workingDirectory),
+        ref: repoRef || getGitValue(['symbolic-ref', 'HEAD'], 'repoRef', workingDirectory)
     };
+}
+
+function runGit(args, workingDirectory) {
+    return (0,external_child_process_.execFileSync)('git', args, {
+        cwd: workingDirectory,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe']
+    }).trim();
+}
+
+function isRepositoryCheckout(owner, repo, workingDirectory) {
+    try {
+        const remote = runGit(['remote', 'get-url', 'origin'], workingDirectory)
+            .replace(/\/+$/, '')
+            .replace(/\.git$/i, '');
+        const repository = remote.match(/[:/]([^/:]+)\/([^/]+)$/);
+        return repository?.[1].toLowerCase() === owner.toLowerCase()
+            && repository?.[2].toLowerCase() === repo.toLowerCase();
+    } catch {
+        return false;
+    }
 }
 
 function getGitValue(args, input, workingDirectory) {
     try {
-        const value = (0,external_child_process_.execFileSync)('git', args, {
-            cwd: workingDirectory,
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'pipe']
-        }).trim();
+        const value = runGit(args, workingDirectory);
         if (value) {
             return value;
         }

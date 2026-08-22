@@ -49,7 +49,8 @@ Provide both values explicitly when the target repository is checked out in anot
     - name: SBOM upload
       uses: advanced-security/spdx-dependency-submission-action@v0
       with:
-        filePath: "target-repo.spdx.json"
+        filePath: "."
+        filePattern: "target-repo.spdx.json"
         token: ${{ secrets.TARGET_REPOSITORY_TOKEN }}
         owner: my-org
         repo: target-repo
