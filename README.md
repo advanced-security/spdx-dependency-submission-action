@@ -43,7 +43,9 @@ jobs:
 ## Submit to another repository
 
 Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository at `repoPath`. Set `repoPath` when the target repository is checked out somewhere other than the Actions working directory.
+
 Provide `repoRef` explicitly when the target repository is checked out at a detached HEAD.
+
 This example assumes `target_sha` is provided as a workflow input.
 
 ```yaml
@@ -60,7 +62,7 @@ This example assumes `target_sha` is provided as a workflow input.
         owner: my-org
         repo: target-repo
         repoPath: target-repo
-        repoSha: ${{ github.event.inputs.target_sha }}
+        repoSha: ${{ inputs.target_sha }}
         repoRef: refs/heads/main
 ```
 
