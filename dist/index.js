@@ -55121,6 +55121,7 @@ var dist_node = __nccwpck_require__(3708);
 
 
 
+
 /**
  * HTTP status codes that should not be retried when submitting a snapshot.
  *
@@ -55236,6 +55237,93 @@ function searchFiles() {
 }
 
 /**
+ * Builds a GitHub context for a target repository submission.
+ * Clears the workflow event name so the toolkit uses the target SHA instead of a pull request payload SHA.
+ *
+ * @param {Object} defaultContext - The GitHub Actions workflow context.
+ * @param {string} workingDirectory - The checked-out target repository directory.
+ * @returns {Object} The workflow context or a context for the target repository.
+ */
+function getSubmissionContext(defaultContext, workingDirectory = process.cwd()) {
+    const repo = getInput('repo');
+    if (!repo) {
+        return defaultContext;
+    }
+
+    const owner = getInput('owner') || defaultContext.repo.owner;
+    const repoSha = getInput('repoSha');
+    const repoRef = getInput('repoRef');
+    if ((!repoSha || !repoRef) && !isRepositoryCheckout(owner, repo, workingDirectory)) {
+        const missingInputs = [
+            !repoSha && "'repoSha'",
+            !repoRef && "'repoRef'"
+        ].filter(Boolean).join(' and ');
+        throw new Error(`The repoPath directory is not a checkout of '${owner}/${repo}'. Provide ${missingInputs} explicitly or set 'repoPath' to a checkout of '${owner}/${repo}'.`);
+    }
+
+    return {
+        ...defaultContext,
+        eventName: '',
+        repo: {
+            owner,
+            repo
+        },
+        sha: repoSha || getGitValue(['rev-parse', 'HEAD'], 'repoSha', workingDirectory),
+        ref: repoRef || getGitRef(workingDirectory)
+    };
+}
+
+function runGit(args, workingDirectory) {
+    return (0,external_child_process_.execFileSync)('git', args, {
+        cwd: workingDirectory,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe']
+    }).trim();
+}
+
+function isRepositoryCheckout(owner, repo, workingDirectory) {
+    try {
+        const remote = runGit(['remote', 'get-url', 'origin'], workingDirectory)
+            .replace(/\/+$/, '')
+            .replace(/\.git$/i, '');
+        const repository = remote.match(/[:/]([^/:]+)\/([^/]+)$/);
+        return repository?.[1].toLowerCase() === owner.toLowerCase()
+            && repository?.[2].toLowerCase() === repo.toLowerCase();
+    } catch {
+        return false;
+    }
+}
+
+function getGitRef(workingDirectory) {
+    if (isDetachedHead(workingDirectory)) {
+        throw new Error("Unable to auto-detect 'repoRef' from a detached HEAD. Provide the 'repoRef' input.");
+    }
+
+    return getGitValue(['symbolic-ref', 'HEAD'], 'repoRef', workingDirectory);
+}
+
+function isDetachedHead(workingDirectory) {
+    try {
+        return runGit(['rev-parse', '--abbrev-ref', 'HEAD'], workingDirectory) === 'HEAD';
+    } catch {
+        return false;
+    }
+}
+
+function getGitValue(args, input, workingDirectory) {
+    try {
+        const value = runGit(args, workingDirectory);
+        if (value) {
+            return value;
+        }
+    } catch {
+        // Report the actionable input error below.
+    }
+
+    throw new Error(`Unable to auto-detect '${input}' from the checked-out repository. Provide the '${input}' input.`);
+}
+
+/**
  * Escapes certain characters in a package URL (purl) to work around issues with some tools not escaping namespaces correctly.
  * Specifically, it replaces "@" with "%40" and "^" with "%5E". If an "@" is already present in the purl, it assumes no further action is needed.
  * If a "%40" is present in the purl without an "@", it converts the last occurrence of "%40" back to "@".
@@ -55346,6 +55434,7 @@ const index_VERSION = "0.3.0";
 
 async function run() {
   let manifests = getManifestsFromSpdxFiles(searchFiles());
+  const submissionContext = getSubmissionContext(github_context, getInput('repoPath') || process.cwd());
 
   const correlator = getInput('correlator');
   let snapshot = new l({
@@ -55353,7 +55442,7 @@ async function run() {
     version: index_VERSION,
     url: "https://github.com/advanced-security/spdx-dependency-submission-action",
   },
-    github_context,
+    submissionContext,
     {
       correlator: correlator,
       id: github_context.runId.toString()
@@ -55363,7 +55452,7 @@ async function run() {
     snapshot.addManifest(manifest);
   });
 
-  await submitSnapshot(snapshot, github_context);
+  await submitSnapshot(snapshot, submissionContext);
 }
 
 run();

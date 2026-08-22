@@ -16,7 +16,22 @@ inputs:
   correlator:
     description: 'The correlator property itself is the primary field used to keep independent submissions distinct.'
     required: false
-    default: ${{ github.job }} 
+    default: ${{ github.job }}
+  repo:
+    description: 'The target repository name. Defaults to the repository where the workflow is running.'
+    required: false
+  owner:
+    description: 'The target repository owner. Defaults to the workflow repository owner.'
+    required: false
+  repoSha:
+    description: 'The target repository HEAD SHA. Defaults to the checked-out repository HEAD in repoPath.'
+    required: false
+  repoRef:
+    description: 'The target repository ref. Defaults to the checked-out repository branch in repoPath.'
+    required: false
+  repoPath:
+    description: 'The path to the checked-out target repository. Defaults to the Actions working directory.'
+    required: false
 runs:
   using: 'node24'
   main: 'dist/index.js'

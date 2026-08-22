@@ -40,10 +40,39 @@ jobs:
         filePath: "_manifest/spdx_2.2/"
 ```
 
-Add support for running inside a matrix by overriding the default correlater unique identifier to include the job+matrix values.  Consider these sample steps:
+## Submit to another repository
+
+Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository at `repoPath`. Set `repoPath` when the target repository is checked out somewhere other than the Actions working directory.
+
+Provide `repoRef` explicitly when the target repository is checked out at a detached HEAD.
+
+This example assumes `target_sha` is provided as a workflow input.
+For a branch checkout at `repoPath`, `repoSha` and `repoRef` can be omitted and auto-detected.
 
 ```yaml
-      # Format corrleator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
+    - uses: actions/checkout@v4
+      with:
+        repository: my-org/target-repo
+        path: target-repo
+    - name: SBOM upload
+      uses: advanced-security/spdx-dependency-submission-action@v0
+      with:
+        filePath: target-repo/_manifest/spdx_2.2
+        filePattern: target-repo.spdx.json
+        token: ${{ secrets.TARGET_REPOSITORY_TOKEN }}
+        owner: my-org
+        repo: target-repo
+        repoPath: target-repo
+        repoSha: ${{ inputs.target_sha }}
+        repoRef: refs/heads/main
+```
+
+The token must have permission to submit dependency snapshots to the target repository.
+
+Add support for running inside a matrix by overriding the default correlator unique identifier to include the job+matrix values.  Consider these sample steps:
+
+```yaml
+      # Format correlator as "job(matrixvalue1, matrixvalue2, ... )" or just "job" with a null matrix
       - name: Define correlator
         id: matrix_parser
         run: |
