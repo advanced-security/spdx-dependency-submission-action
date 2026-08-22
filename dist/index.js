@@ -55165,7 +55165,11 @@ function getManifestFromSpdxFile(document, fileName) {
 
     document.packages?.forEach(pkg => {
         let packageName = pkg.name;
-        let packageVersion = pkg.packageVersion;
+        // versionInfo is the field defined by the SPDX 2.2/2.3 spec for a package's version
+        // (see https://spdx.github.io/spdx-spec/v2.3/package-information/#77-version-information-field).
+        // packageVersion isn't a real SPDX field, but is kept as a fallback in case some existing
+        // generator relies on it.
+        let packageVersion = pkg.versionInfo ?? pkg.packageVersion;
         let referenceLocator = pkg.externalRefs?.find(ref => ref.referenceCategory === "PACKAGE-MANAGER" && ref.referenceType === "purl")?.referenceLocator;
         let genericPurl = `pkg:generic/${packageName}@${packageVersion}`;
         // SPDX 2.3 defines a purl field 
