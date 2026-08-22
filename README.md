@@ -43,6 +43,7 @@ jobs:
 ## Submit to another repository
 
 Set `repo` to submit the snapshot to a repository other than the one running the workflow. `owner` defaults to the workflow repository owner. When `repoSha` or `repoRef` is omitted, the action detects it from the checked-out repository in the working directory.
+Provide both values explicitly when the target repository is checked out in another directory or at a detached HEAD.
 
 ```yaml
     - name: SBOM upload
