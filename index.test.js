@@ -20,7 +20,8 @@ const Snapshot = jest.fn(() => snapshot);
 const submitSnapshot = jest.fn();
 const getInput = jest.fn(name => ({
   correlator: "test-correlator",
-  filePath: "target-repo"
+  filePath: "target-repo/_manifest/spdx_2.2",
+  repoPath: "target-repo"
 })[name] ?? "");
 const getSubmissionContext = jest.fn(() => submissionContext);
 
@@ -54,5 +55,6 @@ test("uses the submission context for snapshot metadata and API routing", () => 
     }
   );
   expect(getSubmissionContext).toHaveBeenCalledWith(workflowContext, "target-repo");
+  expect(getInput).toHaveBeenCalledWith("repoPath");
   expect(submitSnapshot).toHaveBeenCalledWith(snapshot, submissionContext);
 });

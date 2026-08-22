@@ -24,10 +24,13 @@ inputs:
     description: 'The target repository owner. Defaults to the workflow repository owner.'
     required: false
   repoSha:
-    description: 'The target repository HEAD SHA. Defaults to the checked-out repository HEAD.'
+    description: 'The target repository HEAD SHA. Defaults to the checked-out repository HEAD in repoPath.'
     required: false
   repoRef:
-    description: 'The target repository ref. Defaults to the checked-out repository branch.'
+    description: 'The target repository ref. Defaults to the checked-out repository branch in repoPath.'
+    required: false
+  repoPath:
+    description: 'The path to the checked-out target repository. Defaults to filePath.'
     required: false
 runs:
   using: 'node24'
