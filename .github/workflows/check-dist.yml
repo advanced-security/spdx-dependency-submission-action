@@ -3,6 +3,14 @@
 # `index.js` is the code that will run.
 # For our project, we generate this file through a build process from other source files.
 # We need to make sure the checked-in `index.js` actually matches what we expect it to be.
+#
+# dist/ only needs to be correct at release time - release.yml's "bump-version" job already
+# rebuilds it unconditionally right before every version-bump PR, so this check would just be
+# re-verifying a rebuild that already just happened. Scoped to .release.yml changes (mirroring
+# release.yml's own push trigger) so it still catches drift on that PR without adding noise to
+# every regular PR. Note: the "manual-release" ad hoc path (explicit "version" input) skips
+# both the bump-version rebuild and this check entirely - it ships main's dist/ as-is, so keep
+# main's dist/ in sync (e.g. via a "bump" run first) before cutting an ad hoc release.
 name: Check dist/
 permissions:
   contents: read
@@ -11,11 +19,11 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**.md'
+    paths:
+      - '.release.yml'
   pull_request:
-    paths-ignore:
-      - '**.md'
+    paths:
+      - '.release.yml'
   workflow_dispatch:
 
 jobs:
