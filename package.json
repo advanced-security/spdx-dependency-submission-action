@@ -32,7 +32,8 @@
   "dependencies": {
     "@actions/core": "3.0.1",
     "@actions/github": "9.1.1",
-    "@github/dependency-submission-toolkit": "2.0.5"
+    "@github/dependency-submission-toolkit": "2.0.5",
+    "@octokit/plugin-retry": "8.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

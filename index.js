@@ -25,7 +25,7 @@ async function run() {
     snapshot.addManifest(manifest);
   });
 
-  toolkit.submitSnapshot(snapshot);
+  await lib.submitSnapshot(snapshot, context);
 }
 
 run();
