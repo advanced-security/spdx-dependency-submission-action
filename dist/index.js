@@ -52437,18 +52437,11 @@ function isRepositoryCheckout(owner, repo, workingDirectory) {
 }
 
 function getGitRef(workingDirectory) {
-    try {
-        const value = runGit(['symbolic-ref', 'HEAD'], workingDirectory);
-        if (value) {
-            return value;
-        }
-    } catch {
-        if (isDetachedHead(workingDirectory)) {
-            throw new Error("Unable to auto-detect 'repoRef' from a detached HEAD. Provide the 'repoRef' input.");
-        }
+    if (isDetachedHead(workingDirectory)) {
+        throw new Error("Unable to auto-detect 'repoRef' from a detached HEAD. Provide the 'repoRef' input.");
     }
 
-    throw new Error("Unable to auto-detect 'repoRef' from the checked-out repository. Provide the 'repoRef' input.");
+    return getGitValue(['symbolic-ref', 'HEAD'], 'repoRef', workingDirectory);
 }
 
 function isDetachedHead(workingDirectory) {
