@@ -1,6 +1,7 @@
 name: "spdx-dependency-submission-action"
 repository: "advanced-security/spdx-dependency-submission-action"
 version: "0.3.1"
+# TEST: verifying check-dist-build job itself now fails (red). Will be reverted.
 
 locations:
   - name: "Node Manifest"
