@@ -150,6 +150,7 @@ jobs:
       # (e.g. npm ci itself broke) - that's treated as "failure" below regardless of relevance,
       # since we can't vouch dist/ is fine if the rebuild couldn't even run.
       - name: Report check-dist status
+        id: report
         if: always()
         # Only tolerate a failure here for the one known cause: pull_request from a fork, where
         # GITHUB_TOKEN is forced read-only regardless of the permissions declared above (a hard
@@ -204,3 +205,18 @@ jobs:
             echo ""
             echo "$summary"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+
+      # The custom "check-dist" Checks API entry above is detached from this job's own visible
+      # step list - GitHub's Actions UI only shows native jobs under a workflow run, never
+      # standalone Checks-API-created entries, so a genuine failure would otherwise show up as a
+      # fully green "check-dist-build" job here with no visible indication anything's wrong.
+      # Make the job fail too, but ONLY for the real, release-relevant failure case - never for
+      # "neutral" (which is legitimately non-blocking and shouldn't look alarming in the Actions
+      # tab), keeping the job's own status intuitively aligned with the public "check-dist" one.
+      - name: Fail the job on a release-relevant dist/ mismatch
+        if: ${{ steps.report.outputs.conclusion == 'failure' }}
+        run: |
+          echo "::error::check-dist reported 'failure' - see the 'Report check-dist status' step above for details."
+          exit 1
