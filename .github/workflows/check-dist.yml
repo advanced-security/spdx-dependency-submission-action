@@ -7,33 +7,36 @@
 # dist/ only strictly needs to be correct at release time - release.yml's "bump-version" job
 # already rebuilds it unconditionally right before every version-bump PR. So this workflow always
 # runs (no path filter - a required status check must always report a status, or PRs that never
-# trigger it get stuck blocked forever waiting on a check that never arrives), but the PUBLIC
-# "check-dist" status it reports is three-way, not just pass/fail:
+# trigger it get stuck blocked forever waiting on a check that never arrives), but only actually
+# fails for the case that matters:
 #   - dist/ matches a fresh build                                -> success (green)
-#   - dist/ is stale, but this change isn't release-related      -> neutral (yellow, non-blocking)
+#   - dist/ is stale, but this change isn't release-related      -> success (green), with a
+#                                                                    ::warning:: annotation and a
+#                                                                    Job Summary note - visible,
+#                                                                    but non-blocking
 #   - dist/ is stale AND this change touches .release.yml /      -> failure (red, blocks merge)
 #     release.yml / check-dist.yml itself
-# "neutral" is a real Checks API conclusion distinct from success/failure - it satisfies a required
-# status check (does not block merge) but renders as a yellow warning icon, so an author gets a
-# clear, visible, non-blocking nudge that dist/ will need rebuilding (automatically, at the next
-# release bump - or explicitly, via `npm run prepare`, if they want it correct in this PR too).
 #
-# The custom "check-dist" Checks API entry (created in the last step below) deliberately has a
-# different name than this workflow's own job ("check-dist-build"), so there's exactly one
-# "check-dist" status per commit - the one we fully control - instead of two same-named, possibly
-# out-of-order entries (see https://docs.github.com/en/rest/checks/runs: "it's generally a best
-# practice to give each Check a unique name"). Mark *that* name ("check-dist") as the required
-# status check in branch protection/rulesets, not the job's own auto-generated status.
+# This used to instead create a separate, custom Checks API check-run (named "check-dist",
+# distinct from this job) so the "stale but not release-relevant" case could render as a genuine
+# yellow "neutral" conclusion. That was abandoned: a check-run created via a raw `POST
+# /check-runs` call gets auto-assigned by GitHub to *some* active check_suite for the same app+SHA
+# - and since a pull_request event triggers many workflows concurrently under the same
+# "github-actions" app, that assignment is effectively a race. Confirmed live: the custom
+# check-run landed in an unrelated workflow's check_suite (CodeQL's, not this workflow's own), and
+# GitHub's required-status-check matching never recognized it as satisfying the requirement even
+# though the check-run itself showed conclusion:success/neutral/failure correctly - it stayed
+# stuck as "Expected - Waiting for status to be reported" indefinitely, confirmed NOT to be a
+# transient rendering/caching issue (persisted across multiple hard refreshes). There's no
+# parameter on the create-check-run API to control which check_suite it attaches to, so this
+# couldn't be fixed by adjusting that call.
 #
-# Note: for pull_request events from a fork, GITHUB_TOKEN is forced read-only regardless of the
-# `permissions:` declared below (a hard GitHub security boundary) - the "Report check-dist status"
-# step's Checks API call will fail for those specifically, so continue-on-error is scoped to that
-# one condition (fork PRs fall back to no public "check-dist" status, same as before this change
-# existed) - any other failure in that step still fails the job visibly.
+# This job's own native status doesn't have that problem - it's correctly tied to its own
+# check_suite from creation, exactly like every other required check in this repo (test-action,
+# test-npm) - so mark *this* job ("check-dist") as the required status check.
 name: Check dist/
 permissions:
   contents: read
-  checks: write
 
 on:
   push:
@@ -43,7 +46,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-dist-build:
+  check-dist:
     runs-on: ubuntu-latest
 
     steps:
@@ -60,9 +63,8 @@ jobs:
       - name: Rebuild the dist/ directory
         run: npm run prepare
 
-      # Deliberately doesn't exit 1 here - staleness is reported via the custom "check-dist"
-      # Checks API entry below (with a different conclusion for release-relevant vs. regular
-      # changes), not via this job's own native pass/fail.
+      # Deliberately doesn't exit 1 here - blocking is decided in the final step below, based on
+      # both staleness and release-relevance together.
       # `git diff --quiet`: exits 1 as soon as it finds any difference, without needing to
       # generate the full diff text just to count its lines (dist/index.js is ~1.8MB, so this
       # matters). Safe under `set -e` here since it's the condition of an `if`.
@@ -80,8 +82,8 @@ jobs:
           fi
 
       # If dist/ was different than expected, upload the expected version as an artifact -
-      # regardless of red/yellow, so either path can grab a correct dist/ without needing to
-      # rebuild it themselves.
+      # regardless of whether this ends up blocking, so either path can grab a correct dist/
+      # without needing to rebuild it themselves.
       - uses: actions/upload-artifact@v7
         if: ${{ steps.diff.outputs.stale == 'true' }}
         with:
@@ -128,8 +130,8 @@ jobs:
 
           # The compare API silently caps its "files" array at 300 entries with no truncation
           # flag - a diff with >=300 files might have release-relevant paths beyond what's
-          # returned. Fail safe toward "relevant=true" rather than risk a false "neutral" on a
-          # change we can't fully see.
+          # returned. Fail safe toward "relevant=true" rather than risk missing a real problem on
+          # a change we can't fully see.
           file_count=$(echo "$response" | jq '.files | length')
           if [ "$file_count" -ge 300 ]; then
             echo "::warning::Compare API returned $file_count changed files (possible truncation at its 300-file cap) - treating this as release-relevant to be safe."
@@ -144,79 +146,38 @@ jobs:
             echo "relevant=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # This is the one, single "check-dist" status shown in the PR checks list and configured as
-      # the required status check (see the file header) - not this job's own auto-generated
-      # status. `if: always()` so a report is still posted even if an earlier step failed outright
-      # (e.g. npm ci itself broke) - that's treated as "failure" below regardless of relevance,
-      # since we can't vouch dist/ is fine if the rebuild couldn't even run.
-      - name: Report check-dist status
-        id: report
-        if: always()
-        # Only tolerate a failure here for the one known cause: pull_request from a fork, where
-        # GITHUB_TOKEN is forced read-only regardless of the permissions declared above (a hard
-        # GitHub security boundary) and this step's Checks API call will 403. Any other failure
-        # (a real bug in this step, an API outage, etc.) should still fail the job visibly.
-        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+      # Only fails the job (blocking merge, since "check-dist" is a required status check) when
+      # dist/ is genuinely stale AND this change touches release-relevant paths - a plain source
+      # PR that leaves dist/ stale gets a visible, non-blocking warning instead (both a
+      # ::warning:: annotation and a Job Summary note), since dist/ only needs to be correct at
+      # release time and release.yml's bump-version job rebuilds it automatically anyway.
+      - name: Evaluate dist/ staleness
         env:
-          GH_TOKEN: ${{ github.token }}
           STALE: ${{ steps.diff.outputs.stale }}
           RELEVANT: ${{ steps.relevant.outputs.relevant }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
 
-          if [ -z "$STALE" ]; then
-            conclusion="failure"
-            title="Could not verify dist/"
-            summary="An earlier step in this workflow failed before dist/ could be rebuilt and compared - see the check-dist-build job logs for details."
-          elif [ "$STALE" = "false" ]; then
-            conclusion="success"
-            title="dist/ matches source"
-            summary="dist/ is up to date with the current source."
-          elif [ "$RELEVANT" = "true" ]; then
-            conclusion="failure"
-            title="dist/ is out of sync (release-relevant change)"
-            summary='dist/ does not match a fresh build, and this change touches `.release.yml` or the release/check-dist workflows - dist/ **must** be correct here. Run `npm run prepare` and commit the result, or download the "dist" artifact from this run.'
-          else
-            conclusion="neutral"
-            title="dist/ is out of sync"
-            summary='dist/ does not match a fresh build. This is only a hard requirement at release time (`release.yml`'"'"'s bump-version job rebuilds dist/ automatically for every version bump), so this does not block merge - but if you want dist/ correct in this PR too, run `npm run prepare` and commit the result, or download the "dist" artifact from this run.'
+          if [ "$STALE" = "false" ]; then
+            echo "### :white_check_mark: dist/ matches source" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
-          # Build the payload with jq (not raw -f/-F args) so markdown backticks/quotes in the
-          # summary are JSON-escaped correctly instead of tripping up shell quoting.
-          payload=$(jq -n \
-            --arg name "check-dist" \
-            --arg head_sha "$HEAD_SHA" \
-            --arg conclusion "$conclusion" \
-            --arg title "$title" \
-            --arg summary "$summary" \
-            '{name: $name, head_sha: $head_sha, status: "completed", conclusion: $conclusion, output: {title: $title, summary: $summary}}')
+          if [ "$RELEVANT" = "true" ]; then
+            message='dist/ does not match a fresh build, and this change touches `.release.yml` or the release/check-dist workflows - dist/ **must** be correct here. Run `npm run prepare` and commit the result, or download the "dist" artifact from this run.'
+            echo "::error::dist/ is out of sync and this change is release-relevant - dist/ must be rebuilt (npm run prepare) and committed."
+            {
+              echo "### :x: dist/ is out of sync (release-relevant change)"
+              echo ""
+              echo "$message"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
-          echo "$payload" | gh api -X POST "repos/${{ github.repository }}/check-runs" --input -
-
-          case "$conclusion" in
-            success) icon=":white_check_mark:" ;;
-            neutral) icon=":warning:" ;;
-            *) icon=":x:" ;;
-          esac
+          message='dist/ does not match a fresh build. This is only a hard requirement at release time (`release.yml`'"'"'s bump-version job rebuilds dist/ automatically for every version bump), so this does not block merge - but if you want dist/ correct in this PR too, run `npm run prepare` and commit the result, or download the "dist" artifact from this run.'
+          echo "::warning::dist/ is out of sync, but this change isn't release-related, so this is non-blocking - it'll be rebuilt automatically at the next release bump."
           {
-            echo "### $icon $title"
+            echo "### :warning: dist/ is out of sync"
             echo ""
-            echo "$summary"
+            echo "$message"
           } >> "$GITHUB_STEP_SUMMARY"
-
-          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
-
-      # The custom "check-dist" Checks API entry above is detached from this job's own visible
-      # step list - GitHub's Actions UI only shows native jobs under a workflow run, never
-      # standalone Checks-API-created entries, so a genuine failure would otherwise show up as a
-      # fully green "check-dist-build" job here with no visible indication anything's wrong.
-      # Make the job fail too, but ONLY for the real, release-relevant failure case - never for
-      # "neutral" (which is legitimately non-blocking and shouldn't look alarming in the Actions
-      # tab), keeping the job's own status intuitively aligned with the public "check-dist" one.
-      - name: Fail the job on a release-relevant dist/ mismatch
-        if: ${{ steps.report.outputs.conclusion == 'failure' }}
-        run: |
-          echo "::error::check-dist reported 'failure' - see the 'Report check-dist status' step above for details."
-          exit 1
