@@ -4,35 +4,46 @@
 # For our project, we generate this file through a build process from other source files.
 # We need to make sure the checked-in `index.js` actually matches what we expect it to be.
 #
-# dist/ only needs to be correct at release time - release.yml's "bump-version" job already
-# rebuilds it unconditionally right before every version-bump PR, so this check would just be
-# re-verifying a rebuild that already just happened. Scoped to changes to .release.yml (mirroring
-# release.yml's own push trigger) and to the release/dist-check workflows themselves (so a change
-# to the rebuild/verify steps here or in release.yml is still caught), instead of running on every
-# regular PR. Note: the "manual-release" ad hoc path (explicit "version" input) skips both the
-# bump-version rebuild and this check entirely - it ships main's dist/ as-is, so keep main's
-# dist/ in sync (e.g. via a "bump" run first) before cutting an ad hoc release.
+# dist/ only strictly needs to be correct at release time - release.yml's "bump-version" job
+# already rebuilds it unconditionally right before every version-bump PR. So this workflow always
+# runs (no path filter - a required status check must always report a status, or PRs that never
+# trigger it get stuck blocked forever waiting on a check that never arrives), but the PUBLIC
+# "check-dist" status it reports is three-way, not just pass/fail:
+#   - dist/ matches a fresh build                                -> success (green)
+#   - dist/ is stale, but this change isn't release-related      -> neutral (yellow, non-blocking)
+#   - dist/ is stale AND this change touches .release.yml /      -> failure (red, blocks merge)
+#     release.yml / check-dist.yml itself
+# "neutral" is a real Checks API conclusion distinct from success/failure - it satisfies a required
+# status check (does not block merge) but renders as a yellow warning icon, so an author gets a
+# clear, visible, non-blocking nudge that dist/ will need rebuilding (automatically, at the next
+# release bump - or explicitly, via `npm run prepare`, if they want it correct in this PR too).
+#
+# The custom "check-dist" Checks API entry (created in the last step below) deliberately has a
+# different name than this workflow's own job ("check-dist-build"), so there's exactly one
+# "check-dist" status per commit - the one we fully control - instead of two same-named, possibly
+# out-of-order entries (see https://docs.github.com/en/rest/checks/runs: "it's generally a best
+# practice to give each Check a unique name"). Mark *that* name ("check-dist") as the required
+# status check in branch protection/rulesets, not the job's own auto-generated status.
+#
+# Note: for pull_request events from a fork, GITHUB_TOKEN is forced read-only regardless of the
+# `permissions:` declared below (a hard GitHub security boundary) - the "Report check-dist status"
+# step's Checks API call will fail for those specifically, so continue-on-error is scoped to that
+# one condition (fork PRs fall back to no public "check-dist" status, same as before this change
+# existed) - any other failure in that step still fails the job visibly.
 name: Check dist/
 permissions:
   contents: read
+  checks: write
 
 on:
   push:
     branches:
       - main
-    paths:
-      - '.release.yml'
-      - '.github/workflows/release.yml'
-      - '.github/workflows/check-dist.yml'
   pull_request:
-    paths:
-      - '.release.yml'
-      - '.github/workflows/release.yml'
-      - '.github/workflows/check-dist.yml'
   workflow_dispatch:
 
 jobs:
-  check-dist:
+  check-dist-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,18 +60,132 @@ jobs:
       - name: Rebuild the dist/ directory
         run: npm run prepare
 
+      # Deliberately doesn't exit 1 here - staleness is reported via the custom "check-dist"
+      # Checks API entry below (with a different conclusion for release-relevant vs. regular
+      # changes), not via this job's own native pass/fail.
       - name: Compare the expected and actual dist/ directories
-        run: |
-          if [ "$(git diff --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
-            echo "Detected uncommitted changes after build.  See status below:"
-            git diff
-            exit 1
-          fi
         id: diff
+        run: |
+          set -euo pipefail
+          if [ "$(git diff --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
+            echo "dist/ does not match a fresh build. See diff stat below:"
+            git diff --stat dist/
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dist/ matches a fresh build."
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      # If index.js was different than expected, upload the expected version as an artifact
+      # If dist/ was different than expected, upload the expected version as an artifact -
+      # regardless of red/yellow, so either path can grab a correct dist/ without needing to
+      # rebuild it themselves.
       - uses: actions/upload-artifact@v7
-        if: ${{ failure() && steps.diff.conclusion == 'failure' }}
+        if: ${{ steps.diff.outputs.stale == 'true' }}
         with:
           name: dist
           path: dist/
+
+      - name: Determine if this change touches release-relevant paths
+        id: relevant
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          case "${{ github.event_name }}" in
+            pull_request)
+              base="${{ github.event.pull_request.base.sha }}"
+              head="${{ github.event.pull_request.head.sha }}"
+              ;;
+            push)
+              base="${{ github.event.before }}"
+              head="${{ github.sha }}"
+              ;;
+            *)
+              # workflow_dispatch, etc. - no natural base to diff against; treat as relevant so a
+              # manual run always reports the fully-accurate, strict status.
+              echo "relevant=true" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+
+          # All-zero SHA: new branch/first push, nothing to diff against.
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Compare API (not local git diff) so this doesn't depend on checkout fetch-depth.
+          # Fail safe toward "relevant=true" (the stricter path) if the API call itself fails.
+          if ! changed_files=$(gh api "repos/${{ github.repository }}/compare/$base...$head" --jq '.files[].filename' 2>&1); then
+            echo "::warning::Could not compute changed files via the compare API - treating this as release-relevant to be safe. Details: $changed_files"
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if echo "$changed_files" | grep -qE '^(\.release\.yml|\.github/workflows/(release|check-dist)\.yml)$'; then
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "relevant=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # This is the one, single "check-dist" status shown in the PR checks list and configured as
+      # the required status check (see the file header) - not this job's own auto-generated
+      # status. `if: always()` so a report is still posted even if an earlier step failed outright
+      # (e.g. npm ci itself broke) - that's treated as "failure" below regardless of relevance,
+      # since we can't vouch dist/ is fine if the rebuild couldn't even run.
+      - name: Report check-dist status
+        if: always()
+        # Only tolerate a failure here for the one known cause: pull_request from a fork, where
+        # GITHUB_TOKEN is forced read-only regardless of the permissions declared above (a hard
+        # GitHub security boundary) and this step's Checks API call will 403. Any other failure
+        # (a real bug in this step, an API outage, etc.) should still fail the job visibly.
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STALE: ${{ steps.diff.outputs.stale }}
+          RELEVANT: ${{ steps.relevant.outputs.relevant }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$STALE" ]; then
+            conclusion="failure"
+            title="Could not verify dist/"
+            summary="An earlier step in this workflow failed before dist/ could be rebuilt and compared - see the check-dist-build job logs for details."
+          elif [ "$STALE" = "false" ]; then
+            conclusion="success"
+            title="dist/ matches source"
+            summary="dist/ is up to date with the current source."
+          elif [ "$RELEVANT" = "true" ]; then
+            conclusion="failure"
+            title="dist/ is out of sync (release-relevant change)"
+            summary='dist/ does not match a fresh build, and this change touches `.release.yml` or the release/check-dist workflows - dist/ **must** be correct here. Run `npm run prepare` and commit the result, or download the "dist" artifact from this run.'
+          else
+            conclusion="neutral"
+            title="dist/ is out of sync"
+            summary='dist/ does not match a fresh build. This is only a hard requirement at release time (`release.yml`'"'"'s bump-version job rebuilds dist/ automatically for every version bump), so this does not block merge - but if you want dist/ correct in this PR too, run `npm run prepare` and commit the result, or download the "dist" artifact from this run.'
+          fi
+
+          # Build the payload with jq (not raw -f/-F args) so markdown backticks/quotes in the
+          # summary are JSON-escaped correctly instead of tripping up shell quoting.
+          payload=$(jq -n \
+            --arg name "check-dist" \
+            --arg head_sha "$HEAD_SHA" \
+            --arg conclusion "$conclusion" \
+            --arg title "$title" \
+            --arg summary "$summary" \
+            '{name: $name, head_sha: $head_sha, status: "completed", conclusion: $conclusion, output: {title: $title, summary: $summary}}')
+
+          echo "$payload" | gh api -X POST "repos/${{ github.repository }}/check-runs" --input -
+
+          case "$conclusion" in
+            success) icon=":white_check_mark:" ;;
+            neutral) icon=":warning:" ;;
+            *) icon=":x:" ;;
+          esac
+          {
+            echo "### $icon $title"
+            echo ""
+            echo "$summary"
+          } >> "$GITHUB_STEP_SUMMARY"
