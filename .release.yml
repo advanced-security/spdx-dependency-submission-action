@@ -1,6 +1,7 @@
 name: "spdx-dependency-submission-action"
 repository: "advanced-security/spdx-dependency-submission-action"
 version: "0.3.1"
+# TEST: harmless comment to validate check-dist failure (red) path. Will be reverted.
 
 locations:
   - name: "Node Manifest"
