@@ -26,7 +26,9 @@ updates:
     schedule:
       interval: "weekly"
     cooldown:
-      default-days: 3
+      # Aligned with .npmrc's min-release-age=7 so Dependabot doesn't propose
+      # versions that npm install/ci will then refuse until they're 7 days old.
+      default-days: 7
     reviewers:
       - "advanced-security/advanced-security-dependency-graph"
       - "advanced-security/oss-maintainers"
