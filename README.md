@@ -55,7 +55,7 @@ For a branch checkout at `repoPath`, `repoSha` and `repoRef` can be omitted and 
         repository: my-org/target-repo
         path: target-repo
     - name: SBOM upload
-      uses: advanced-security/spdx-dependency-submission-action@v0
+      uses: advanced-security/spdx-dependency-submission-action@v0.3.2
       with:
         filePath: target-repo/_manifest/spdx_2.2
         filePattern: target-repo.spdx.json
