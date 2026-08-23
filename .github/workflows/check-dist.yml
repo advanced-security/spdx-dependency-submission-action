@@ -63,13 +63,16 @@ jobs:
       # Deliberately doesn't exit 1 here - staleness is reported via the custom "check-dist"
       # Checks API entry below (with a different conclusion for release-relevant vs. regular
       # changes), not via this job's own native pass/fail.
+      # `git diff --quiet`: exits 1 as soon as it finds any difference, without needing to
+      # generate the full diff text just to count its lines (dist/index.js is ~1.8MB, so this
+      # matters). Safe under `set -e` here since it's the condition of an `if`.
       - name: Compare the expected and actual dist/ directories
         id: diff
         run: |
           set -euo pipefail
-          if [ "$(git diff --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
+          if ! git diff --quiet --ignore-space-at-eol -- dist/; then
             echo "dist/ does not match a fresh build. See diff stat below:"
-            git diff --stat dist/
+            git diff --stat -- dist/
             echo "stale=true" >> "$GITHUB_OUTPUT"
           else
             echo "dist/ matches a fresh build."
@@ -117,12 +120,24 @@ jobs:
 
           # Compare API (not local git diff) so this doesn't depend on checkout fetch-depth.
           # Fail safe toward "relevant=true" (the stricter path) if the API call itself fails.
-          if ! changed_files=$(gh api "repos/${{ github.repository }}/compare/$base...$head" --jq '.files[].filename' 2>&1); then
-            echo "::warning::Could not compute changed files via the compare API - treating this as release-relevant to be safe. Details: $changed_files"
+          if ! response=$(gh api "repos/${{ github.repository }}/compare/$base...$head" 2>&1); then
+            echo "::warning::Could not compute changed files via the compare API - treating this as release-relevant to be safe. Details: $response"
             echo "relevant=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          # The compare API silently caps its "files" array at 300 entries with no truncation
+          # flag - a diff with >=300 files might have release-relevant paths beyond what's
+          # returned. Fail safe toward "relevant=true" rather than risk a false "neutral" on a
+          # change we can't fully see.
+          file_count=$(echo "$response" | jq '.files | length')
+          if [ "$file_count" -ge 300 ]; then
+            echo "::warning::Compare API returned $file_count changed files (possible truncation at its 300-file cap) - treating this as release-relevant to be safe."
+            echo "relevant=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_files=$(echo "$response" | jq -r '.files[].filename')
           if echo "$changed_files" | grep -qE '^(\.release\.yml|\.github/workflows/(release|check-dist)\.yml)$'; then
             echo "relevant=true" >> "$GITHUB_OUTPUT"
           else
