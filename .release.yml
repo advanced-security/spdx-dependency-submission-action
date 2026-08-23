@@ -1,6 +1,7 @@
 name: "spdx-dependency-submission-action"
 repository: "advanced-security/spdx-dependency-submission-action"
 version: "0.3.1"
+# TEST: validating check-dist failure blocks merge under required ruleset. Will be reverted.
 
 locations:
   - name: "Node Manifest"
