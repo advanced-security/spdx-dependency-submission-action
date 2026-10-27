@@ -33194,12 +33194,12 @@
       ],
       "licenseDeclared": "NOASSERTION",
       "copyrightText": "NOASSERTION",
-      "versionInfo": "2.2.1",
+      "versionInfo": "2.14.2",
       "externalRefs": [
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:npm/launch-editor%402.2.1"
+          "referenceLocator": "pkg:npm/launch-editor%402.14.2"
         }
       ],
       "supplier": "NOASSERTION"
